@@ -3,8 +3,7 @@
 OpenWeatherMap Icon Downloader
 
 This script downloads OpenWeatherMap weather icons, resizes them to suitable
-dimensions for ESP32 displays, and prepares them for further conversion to
-LVGL's binary format.
+dimensions for ESP32 displays.
 """
 
 from pathlib import Path
