@@ -2,8 +2,8 @@
 import json
 import secrets
 import time
+import gc
 from umqtt.simple import MQTTClient
-
 
 class MQTT:
     """
@@ -22,8 +22,12 @@ class MQTT:
 
         self.is_connected = False
         self.callbacks = []
+        self.client = None
+        self._init_client()
 
-        # Initialize the underlying MicroPython MQTT client
+    def _init_client(self):
+        """Initializes the underlying MicroPython MQTT client with clean memory."""
+        gc.collect() # Free memory before allocating new SSL buffers
         self.client = MQTTClient(
             client_id=self.device_id,
             server=self.broker,
@@ -99,20 +103,31 @@ class MQTT:
         if not self.is_connected:
             return False
         try:
-            # Convert dict/list to JSON string
             payload = json.dumps(data)
             self.client.publish(topic, payload, retain=retain)
             return True
         except Exception as e:
             print(f"Publish failed: {e}")
+            self.is_connected = False # Mark as disconnected on failure
             return False
 
     def check_msg(self):
-        """Checks for new messages. Vital for the Dashboard loop."""
-        if self.is_connected:
-            try:
-                self.client.check_msg()
-            except Exception as e:
-                print(f"MQTT check_msg error: {e}")
-                self.is_connected = False
-                raise e  # Forward error to main loop for reset handling
+        """
+        Checks for new messages. Handles socket errors and connection state.
+        Vital for the Dashboard loop.
+        """
+        if not self.is_connected:
+            return
+
+        try:
+            self.client.check_msg()
+        except OSError as e:
+            # Error -1 often means socket closed or timeout
+            print(f"MQTT connection lost (OSError {e}).")
+            self.is_connected = False
+            self._init_client() # Re-initialize for next connect attempt
+            raise e # Raise to notify main loop for reconnection
+        except Exception as e:
+            print(f"MQTT check_msg error: {e}")
+            self.is_connected = False
+            raise e
