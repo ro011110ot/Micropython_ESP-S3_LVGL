@@ -1,0 +1,31 @@
+python3 make.py esp32 clean BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT DISPLAY=st7789 --flash-size=16 --partition-size=4194304 CONFIG_SPIRAM_MODE_OCT=y CONFIG_SPIRAM_SPEED_80M=y CONFIG_BOOTLOADER_WDT_TIME_MS=12000 deploy PORT=/dev/ttyACM0
+
+python3 -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 120m --erase-all 0x0 /home/ro011110ot/lvgl_micropython/build/lvgl_micropy_ESP32_GENERIC_S3-SPIRAM_OCT-16.bin
+
+... ESP-ROM:esp32s3-20210327
+
+Build:Mar 27 2021
+
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+
+SPIWP:0xee
+
+mode:DIO, clock div:1
+
+load:0x3fce2820,len:0xeac
+
+load:0x403c8700,len:0xc28
+
+load:0x403cb700,len:0x2ff8
+
+entry 0x403c88ac
+
+1MB allocation: 67 ms
+
+1MB write: 7373 ms
+
+MicroPython v1.27.0-dirty on 2025-12-13; Generic ESP32S3 module with Octal-SPIRAM with ESP32S3
+
+Type "help()" for more information.
+
+>>>
