@@ -1,41 +1,93 @@
+# vps_monitor_screen.py
 import lvgl as lv
 
 
 class VPSMonitorScreen:
+    """
+    VPS Monitor screen displaying CPU, RAM, Disk usage and formatted Uptime.
+    Converts raw seconds into a human-readable format.
+    """
+
     def __init__(self):
         self.screen = lv.obj()
-        self.screen.set_style_bg_color(lv.palette_main(lv.PALETTE.GREY), 0)
+        # Set dark theme background
+        self.screen.set_style_bg_color(lv.color_hex(0x0A0E27), 0)
+        self.screen.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
 
-        # Title (German as requested)
+        # Title label
         label = lv.label(self.screen)
-        label.set_text("VPS Status")
+        label.set_text("VPS STATUS")
+        label.set_style_text_color(lv.color_hex(0x00D9FF), 0)
         label.align(lv.ALIGN.TOP_MID, 0, 10)
 
-        # CPU Bar
-        self.cpu_bar = self._create_metric_bar("CPU", 50)
-        # RAM Bar
-        self.ram_bar = self._create_metric_bar("RAM", 100)
-        # Disk Bar
-        self.disk_bar = self._create_metric_bar("Disk", 150)
+        # Metric Widgets (Progress Bars)
+        self.cpu_bar = self._create_metric("CPU Usage", 55)
+        self.ram_bar = self._create_metric("RAM Usage", 115)
+        self.disk_bar = self._create_metric("Disk Usage", 175)
 
-    def _create_metric_bar(self, name, y_pos):
-        # Label for the metric
-        label = lv.label(self.screen)
-        label.set_text(name)
-        label.align(lv.ALIGN.TOP_LEFT, 20, y_pos)
+        # Uptime Section
+        uptime_title = lv.label(self.screen)
+        uptime_title.set_text("System Uptime:")
+        uptime_title.set_style_text_color(lv.color_hex(0xA0A0C0), 0)
+        uptime_title.align(lv.ALIGN.TOP_LEFT, 15, 235)
 
-        # The Bar
+        self.uptime_label = lv.label(self.screen)
+        self.uptime_label.set_text("Awaiting data...")
+        self.uptime_label.set_style_text_color(lv.color_hex(0xFFFFFF), 0)
+        self.uptime_label.align(lv.ALIGN.TOP_LEFT, 15, 260)
+        self.uptime_label.set_width(210)
+
+    def _format_uptime(self, seconds):
+        """
+        Converts raw seconds into a string: 'Xd Xh Xm'.
+        """
+        try:
+            s = int(seconds)
+            days = s // 86400
+            hours = (s % 86400) // 3600
+            minutes = (s % 3600) // 60
+
+            if days > 0:
+                return "{:d}d {:d}h {:d}m".format(days, hours, minutes)
+            else:
+                return "{:d}h {:d}m".format(hours, minutes)
+        except Exception:
+            # Fallback if input is not a valid number
+            return str(seconds)
+
+    def _create_metric(self, name, y_pos):
+        """
+        Helper to create a label and a bar for a specific metric.
+        """
+        lbl = lv.label(self.screen)
+        lbl.set_text(name)
+        lbl.set_style_text_color(lv.color_hex(0xAAAAAA), 0)
+        lbl.align(lv.ALIGN.TOP_LEFT, 15, y_pos)
+
         bar = lv.bar(self.screen)
-        bar.set_size(200, 20)
-        bar.align(lv.ALIGN.TOP_LEFT, 80, y_pos)
+        bar.set_size(210, 15)
+        bar.align(lv.ALIGN.TOP_LEFT, 15, y_pos + 25)
+        bar.set_style_bg_color(lv.color_hex(0x1A1F3A), 0)
         bar.set_range(0, 100)
         return bar
 
-    def update_values(self, cpu, ram, disk):
-        """Updates the visual bars with real-time data from MQTT."""
-        self.cpu_bar.set_value(int(cpu), lv.ANIM.ON)
-        self.ram_bar.set_value(int(ram), lv.ANIM.ON)
-        self.disk_bar.set_value(int(disk), lv.ANIM.ON)
+    def update_values(self, cpu, ram, disk, uptime_raw="--"):
+        """
+        Updates bars and formats the uptime text.
+        Uses 0 for animation parameter to ensure compatibility with LVGL v9.
+        """
+        try:
+            # Set bar values (0 = no animation)
+            self.cpu_bar.set_value(int(cpu), 0)
+            self.ram_bar.set_value(int(ram), 0)
+            self.disk_bar.set_value(int(disk), 0)
+
+            # Apply formatting to raw uptime seconds
+            formatted_uptime = self._format_uptime(uptime_raw)
+            self.uptime_label.set_text(formatted_uptime)
+        except Exception as e:
+            print("Error updating VPS values:", e)
 
     def get_screen(self):
+        """Returns the screen instance for display management."""
         return self.screen

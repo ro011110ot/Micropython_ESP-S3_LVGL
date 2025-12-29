@@ -1,49 +1,38 @@
+# wifi.py
 import time
-
 import network
 import ubinascii
-
 from secrets import WIFI_CREDENTIALS
 
-# --- Dynamische LED Erkennung ---
+# --- Dynamic LED Detection ---
 led = None
 
 try:
     from status_led_rgb import StatusLedRGB
-
     led = StatusLedRGB()
-    print("RGB LED erkannt.")
+    print("RGB LED detected.")
 except ImportError:
     try:
         from status_led import StatusLed
-
         led = StatusLed()
-        print("Einfache LED erkannt.")
+        print("Simple LED detected.")
     except ImportError:
-
         class DummyLed:
-            def wifi_connecting(self):
-                pass
-
-            def mqtt_connecting(self):
-                pass
-
-            def set_state(self, r, g, b):
-                pass
-
-            def off(self):
-                pass
-
-
+            def wifi_connecting(self): pass
+            def mqtt_connecting(self): pass
+            def set_state(self, r, g, b): pass
+            def off(self): pass
         led = DummyLed()
-        print("Keine Status-LED Datei gefunden. Fahre ohne LED fort.")
-
+        print("No status LED file found. Proceeding without LED.")
 
 def connect():
+    """
+    Connects to the best available WiFi network from secrets.py.
+    """
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
 
-    # MAC-Adresse auslesen und formatieren
+    # Read and format MAC address
     mac = ubinascii.hexlify(wlan.config("mac")).decode()
 
     for creds in WIFI_CREDENTIALS:
@@ -53,9 +42,10 @@ def connect():
         ssid = creds.get("ssid")
         password = creds.get("password")
 
-        print(f"Verbinde mit {ssid}...")
+        print(f"Connecting to {ssid}...")
         wlan.connect(ssid, password)
 
+        # Wait for connection (max 10 seconds)
         max_wait = 10
         while max_wait > 0:
             led.wifi_connecting()
@@ -65,23 +55,22 @@ def connect():
             time.sleep(1)
 
         if wlan.isconnected():
-            # Netzwerk-Konfiguration abrufen (IP, Subnet, Gateway, DNS)
             config = wlan.ifconfig()
             ip_address = config[0]
 
             print("-" * 30)
-            print("WLAN erfolgreich verbunden!")
+            print("WiFi connected successfully!")
             print(f"SSID: {ssid}")
-            print(f"IP-Adresse:  {ip_address}")
-            print(f"MAC-Adresse: {mac.upper()}")
+            print(f"IP:   {ip_address}")
+            print(f"MAC:  {mac.upper()}")
             print("-" * 30)
 
-            # LED auf Grün (oder AN) setzen
-            led.set_state(0, 255, 0)
-            return True  # <--- HIER MUSS TRUE STEHEN!
+            # Set LED to off
+            led.set_state(0, 0, 0)
+            return True 
 
     if not wlan.isconnected():
-        led.set_state(255, 0, 0)  # Rot bei RGB, AN bei einfacher LED
-        print(f"Fehler: Verbindung zu keinem Netzwerk möglich. MAC: {mac.upper()}")
-        raise RuntimeError("Netzwerkverbindung fehlgeschlagen")
+        led.set_state(255, 0, 0) # Red for error
+        print(f"Error: Could not connect to any network. MAC: {mac.upper()}")
+        raise RuntimeError("Network connection failed")
     return False

@@ -1,101 +1,75 @@
+# main.py
 import time
-
-import lvgl as lv
 import machine
-
-import display
-import ntp
-import sensors_screen
-import weather
-import wifi
+import gc
+import wifi, ntp
 from mqtt_client import MQTT
-from status_led_rgb import StatusLedRGB
-from vps_monitor_screen import VPSMonitorScreen  # New import
-
-# 1. Initialize Watchdog (Timeout 8 seconds)
-# This will reset the ESP32 if the loop hangs for more than 8s
-wdt = machine.WDT(timeout=8000)
+from display import Display
+from weather_screen import WeatherScreen
+from sensors_screen import SensorScreen
+from vps_monitor_screen import VPSMonitorScreen
 
 
 def main():
-    """
-    Main function to initialize and run the application.
-    """
-    led = StatusLedRGB()
-
-    # Connect to Wi-Fi
+    # Network and time synchronization
     wifi.connect()
-
-    # Synchronize time with NTP
     ntp.sync()
 
-    # Start the MQTT client
-    led.mqtt_connecting()
+    # Initialize MQTT client
     mqtt = MQTT()
     mqtt.connect()
-    led.set_state(255, 255, 0)  # Yellow for connected
-    time.sleep(1)
-    led.off()
 
-    print("=== Initializing Display Screens ===")
-    # Start the display manager
-    disp = display.Display()
+    # Watchdog timer to prevent system freezes (8 seconds timeout)
+    wdt = machine.WDT(timeout=8000)
 
-    # Initialize screens
-    weather_scr = weather.WeatherScreen(mqtt)
-    sensor_scr = sensors_screen.SensorScreen(mqtt)
-    vps_scr = VPSMonitorScreen()  # No MQTT needed in init, handled by task_handler/mqtt_client
+    # Initialize the display manager
+    disp_man = Display()
 
-    disp.add_screen("Weather", weather_scr)
-    disp.add_screen("Sensors", sensor_scr)
-    disp.add_screen("VPS", vps_scr)  # Add the new VPS screen
+    # Initialize all screens and feed the watchdog during setup
+    wdt.feed()
+    weather = WeatherScreen(mqtt)
+    wdt.feed()
+    sensors = SensorScreen(mqtt)
+    wdt.feed()
+    vps = VPSMonitorScreen()
 
-    disp.show_screen("Weather")
+    # Register screens in the display manager
+    disp_man.add_screen("Weather", weather)
+    disp_man.add_screen("Sensors", sensors)
+    disp_man.add_screen("VPS", vps)
 
-    print("Display initialized and running!")
-    print("Screens will switch automatically every 10 seconds.")
-    print("Press Ctrl+C to stop\n")
+    screens = ["Weather", "Sensors", "VPS"]
+    idx = 0
 
-    # List of screens for automatic rotation (now including VPS)
-    screen_names = ["Weather", "Sensors", "VPS"]
-    current_screen_index = 0
-    screen_switch_counter = 0
-    SWITCH_INTERVAL = 100  # 100 * 100ms = 10 Seconds
-
-    # Main loop
     while True:
-        # Feed the watchdog at the start of every loop
-        wdt.feed()
-
-        # Check for MQTT connection and reconnect if necessary
-        if not mqtt.is_connected:
-            print("MQTT Verbindung verloren. Reconnect...")  # Kept German for UI/Console
-            if mqtt.connect():
-                print("MQTT Reconnected.")
-                # Re-subscribe for Sensor data
-                if sensor_scr:
-                    sensor_scr.subscribe_to_topics()
-            else:
-                time.sleep(5)
-                continue
-
-        # Process incoming MQTT messages
+        wdt.feed()  # Reset watchdog timer
         mqtt.check_msg()
 
+        # Update VPS data if new messages arrived via MQTT
         if mqtt.vps_data:
-            data = mqtt.vps_data
-            vps_scr = disp.get_screen_instance("VPS")
-            mqtt.vps_data = None  # Reset, damit wir nicht doppelt updaten
-        # Automatic screen switching
-        screen_switch_counter += 1
-        if screen_switch_counter >= SWITCH_INTERVAL:
-            screen_switch_counter = 0
-            current_screen_index = (current_screen_index + 1) % len(screen_names)
-            next_screen = screen_names[current_screen_index]
-            print(f"Wechsle zu: {next_screen}...")  # Kept German
-            disp.show_screen(next_screen)
+            cpu = mqtt.vps_data.get("cpu", 0)
+            ram = mqtt.vps_data.get("ram", 0)
+            disk = mqtt.vps_data.get("disk", 0)
+            # Fetch raw uptime (seconds) from MQTT data
+            uptime = mqtt.vps_data.get("uptime", 0)
 
-        time.sleep_ms(100)
+            # Pass all values including uptime to the screen
+            vps.update_values(cpu, ram, disk, uptime)
+            mqtt.vps_data = None
+
+        # Cycle through the registered screens
+        disp_man.show_screen(screens[idx])
+        idx = (idx + 1) % len(screens)
+
+        # Internal loop for screen timing (approx. 10 seconds per screen)
+        for _ in range(100):
+            wdt.feed()
+            mqtt.check_msg()
+            weather.update_time()  # Keep the clock updated
+            time.sleep_ms(100)
+
+        # Clear memory after each screen cycle
+        gc.collect()
 
 
 if __name__ == "__main__":

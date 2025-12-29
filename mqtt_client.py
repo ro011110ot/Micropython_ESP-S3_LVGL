@@ -1,128 +1,85 @@
-import ubinascii
-import ujson
-from machine import unique_id
+import json
+import machine
+import secrets
 from umqtt.simple import MQTTClient
-
-# Neuer Import-Block in mqtt_client.py
-try:
-    from secrets import (
-        MQTT_BROKER,
-        MQTT_PORT,
-        MQTT_USER,
-        MQTT_PASS,
-        MQTT_USE_SSL,
-        MQTT_CLIENT_ID
-    )
-except ImportError:
-    print("Error: Could not import 'secrets.py'")
-    MQTT_BROKER = None
-    MQTT_PORT = 0
-    MQTT_USER = ""
-    MQTT_PASS = ""
-    MQTT_USE_SSL = False
-    MQTT_CLIENT_ID = None
 
 
 class MQTT:
     """
-    A wrapper class for the umqtt.simple.MQTTClient.
-    Handles connection, publishing, and disconnection.
-    Formats and sends sensor data as JSON payloads.
+    MQTT client with SSL support, Last Will (LWT), and multi-callback dispatching.
     """
 
     def __init__(self):
-        """
-        Initializes the MQTT client.
-        """
-        if not MQTT_BROKER or not MQTT_PORT:
-            raise ValueError(
-                "MQTT_BROKER or MQTT_PORT is not defined or found in secrets.py"
-            )
+        # Credentials from secrets.py
+        self.broker = secrets.MQTT_BROKER
+        self.port = secrets.MQTT_PORT
+        self.user = secrets.MQTT_USER
+        self.password = secrets.MQTT_PASS
+        self.device_id = secrets.MQTT_CLIENT_ID
+        self.use_ssl = secrets.MQTT_USE_SSL
 
-        self.client_id = MQTT_CLIENT_ID if MQTT_CLIENT_ID else ubinascii.hexlify(unique_id()).decode()
-        self.broker = MQTT_BROKER
-        self.port = MQTT_PORT
-        self.user = MQTT_USER
-        self.password = MQTT_PASS
+        self.is_connected = False
+        self.vps_data = None
+        self.callbacks = []  # List for external modules like SensorScreen
+
+        # Initialize the MQTT client
         self.client = MQTTClient(
-            self.client_id,
-            self.broker,
+            client_id=self.device_id,
+            server=self.broker,
             port=self.port,
             user=self.user,
             password=self.password,
-            ssl=MQTT_USE_SSL,
-            keepalive=60
+            keepalive=60,
+            ssl=self.use_ssl
         )
-        self.is_connected = False
+        self.client.set_callback(self._internal_callback)
+
+    def _internal_callback(self, topic, msg):
+        """Dispatches messages to VPS buffer and registered screen callbacks."""
+        topic_str = topic.decode()
+
+        # Internal handling for VPS Monitor data
+        if topic_str == "vps/monitor":
+            try:
+                self.vps_data = json.loads(msg)
+            except:
+                pass
+
+        # Dispatch to registered listeners (e.g. SensorScreen)
+        for cb in self.callbacks:
+            try:
+                cb(topic, msg)
+            except Exception as e:
+                print(f"Callback error: {e}")
+
+    def set_callback(self, cb):
+        """Register a new function to receive MQTT messages."""
+        if cb not in self.callbacks:
+            self.callbacks.append(cb)
 
     def connect(self):
-        """
-        Connects to the MQTT broker.
-        Returns True on success, False on failure.
-        """
-        print(f"Connecting to MQTT broker at {self.broker}:{self.port}...")
+        """Connect with Last Will and Testament."""
+        print(f"Connecting to MQTT via {'SSL' if self.use_ssl else 'TCP'}...")
         try:
-            self.client.set_last_will(f"status/{self.device_id}", "offline", retain=True)
+            lwt_topic = f"status/{self.device_id}"
+            self.client.set_last_will(lwt_topic, "offline", retain=True)
             self.client.connect()
-            # Announce online status
-            self.client.publish(f"status/{self.device_id}", "online", retain=True)
-            self.is_connected = True
+            self.client.publish(lwt_topic, "online", retain=True)
             self.client.subscribe("vps/monitor")
-            print("MQTT connected successfully.")
+            self.is_connected = True
             return True
-        except OSError as e:
-            print(f"Failed to connect to MQTT broker: {e}")
+        except Exception as e:
+            print(f"MQTT Connection failed: {e}")
             self.is_connected = False
             return False
 
-    def disconnect(self):
-        """
-        Disconnects from the MQTT broker.
-        """
-        if self.is_connected:
-            print("Disconnecting from MQTT broker.")
-            self.client.disconnect()
-            self.is_connected = False
-
-    def set_callback(self, callback):
-        """
-        Sets the callback function for incoming messages.
-        """
-        self.client.set_callback(callback)
-
-    def subscribe(self, topic):
-        """
-        Subscribes to a topic.
-        """
-        if self.is_connected:
-            print(f"Subscribing to topic: {topic}")
-            self.client.subscribe(topic)
-
     def check_msg(self):
-        """
-        Checks for pending messages. Should be called periodically.
-        """
         if self.is_connected:
             try:
                 self.client.check_msg()
-            except OSError as e:
-                print(f"MQTT Error in check_msg: {e}")
+            except:
                 self.is_connected = False
 
-    def publish(self, sensor_data, topic="Sensors"):
-        """
-        Publiziert Daten direkt in ein Haupt-Topic.
-        Standardmäßig 'Sensors', damit alle ESPs denselben Pfad nutzen.
-        """
-        if not self.is_connected:
-            print("Nicht verbunden. Nachricht wird verworfen.")
-            return
-
-        payload = ujson.dumps(sensor_data).encode("utf-8")
-
-        try:
-            print(f"Sende an '{topic}': {payload}")
-            self.client.publish(topic, payload)
-        except Exception as e:
-            print(f"Fehler beim Senden: {e}")
-            self.is_connected = False
+    def subscribe(self, topic):
+        if self.is_connected:
+            self.client.subscribe(topic)
