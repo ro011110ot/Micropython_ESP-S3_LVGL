@@ -26,7 +26,10 @@ class MQTT:
         self._init_client()
 
     def _init_client(self):
-        """Initializes the underlying MicroPython MQTT client with clean memory."""
+        """
+        Initializes the underlying MicroPython MQTT client with clean memory.
+        Crucial for SSL stability on ESP32.
+        """
         gc.collect() # Free memory before allocating new SSL buffers
         self.client = MQTTClient(
             client_id=self.device_id,
@@ -98,7 +101,7 @@ class MQTT:
     def publish(self, data, topic="Sensors", retain=False):
         """
         Publishes data as JSON.
-        Supports 'retain' for sensor values to be stored by the broker.
+        Used by the Sensors to send updates.
         """
         if not self.is_connected:
             return False
@@ -108,13 +111,14 @@ class MQTT:
             return True
         except Exception as e:
             print(f"Publish failed: {e}")
-            self.is_connected = False # Mark as disconnected on failure
+            # Mark as disconnected so the sender can try to reconnect
+            self.is_connected = False
             return False
 
     def check_msg(self):
         """
         Checks for new messages. Handles socket errors and connection state.
-        Vital for the Dashboard loop.
+        Vital for the Dashboard loop to detect connection loss.
         """
         if not self.is_connected:
             return
