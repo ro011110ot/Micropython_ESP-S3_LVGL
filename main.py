@@ -15,7 +15,7 @@ def setup_mqtt(mqtt, data_mgr):
     """Initializes and connects MQTT with all subscriptions."""
     try:
         if mqtt.connect():
-            # Double subscription to be absolutely safe (Case Sensitivity)
+            # Subscriptions according to your logs
             mqtt.subscribe("Sensors/#")
             mqtt.subscribe("sensors/#")
             mqtt.subscribe("vps/monitor")
@@ -27,7 +27,6 @@ def setup_mqtt(mqtt, data_mgr):
 
 
 def main():
-    # Initial connection
     wifi.connect()
     ntp.sync()
 
@@ -35,17 +34,14 @@ def main():
     mqtt = MQTT()
     mqtt.set_callback(data_mgr.process_message)
 
-    # First connection attempt
     if not setup_mqtt(mqtt, data_mgr):
         print("Initial MQTT connection failed. Rebooting...")
         time.sleep(5)
         machine.reset()
 
-    # Hardware Watchdog (8 seconds)
     wdt = machine.WDT(timeout=8000)
     disp_man = Display()
 
-    # Initialize Screens
     weather = WeatherScreen(mqtt)
     sensors = SensorScreen(mqtt, data_mgr)
     vps = VPSMonitorScreen()
@@ -63,21 +59,15 @@ def main():
             current_name = screens[idx]
             disp_man.show_screen(current_name)
 
-            # Screen display duration loop (approx 10 seconds)
             for _ in range(100):
                 wdt.feed()
 
                 try:
                     mqtt.check_msg()
                 except Exception as e:
-                    print(f"MQTT Loop Error: {e}. Attempting reconnect...")
-                    # Try to reconnect without resetting the whole ESP32
-                    if not setup_mqtt(mqtt, data_mgr):
-                        # If reconnect fails, we let the loop continue
-                        # and the WDT will eventually reset if it hangs
-                        pass
+                    print(f"MQTT Error: {e}. Reconnecting...")
+                    setup_mqtt(mqtt, data_mgr)
 
-                # UI Updates depending on active screen
                 if current_name == "Weather":
                     weather.update_time()
                 elif current_name == "Sensors":
@@ -85,18 +75,18 @@ def main():
                 elif current_name == "VPS":
                     v_data = data_mgr.data_store.get("vps", {})
                     if v_data:
+                        # FIX: Using UPPERCASE keys as defined in data_manager.py
                         vps.update_values(
-                            v_data.get("cpu", 0),
-                            v_data.get("ram", 0),
-                            v_data.get("disk", 0),
-                            v_data.get("uptime", 0)
+                            v_data.get("CPU", 0),
+                            v_data.get("RAM", 0),
+                            v_data.get("DISK", 0),
+                            v_data.get("UPTIME", 0)
                         )
 
                 time.sleep_ms(100)
 
-            # Switch to next screen
             idx = (idx + 1) % len(screens)
-            gc.collect()  # Periodical micro memory cleanup
+            gc.collect()
 
         except Exception as global_err:
             print(f"Global Loop Error: {global_err}")
