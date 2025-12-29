@@ -1,9 +1,10 @@
 # display.py
-import lvgl as lv
-import st7789
 import lcd_bus
+import lvgl as lv
 import machine
+import st7789
 from micropython import const
+
 import task_handler
 
 # IMPORTANT: All values must be integers, not strings!
@@ -30,18 +31,18 @@ if not lv.is_initialized():
 
 print("Creating SPI bus...")
 spi_bus = machine.SPI.Bus(
-    host=int(SPI_HOST),      # Ensure it is an int
-    mosi=int(MOSI),          # Ensure it is an int
-    miso=int(MISO),          # Ensure it is an int
-    sck=int(SCK),            # Ensure it is an int
+    host=int(SPI_HOST),  # Ensure it is an int
+    mosi=int(MOSI),  # Ensure it is an int
+    miso=int(MISO),  # Ensure it is an int
+    sck=int(SCK),  # Ensure it is an int
 )
 
 print("Creating display bus...")
 display_bus = lcd_bus.SPIBus(
     spi_bus=spi_bus,
-    freq=int(_FREQ),         # Ensure it is an int
-    dc=int(DC),              # Ensure it is an int
-    cs=int(CS),              # Ensure it is an int
+    freq=int(_FREQ),  # Ensure it is an int
+    dc=int(DC),  # Ensure it is an int
+    cs=int(CS),  # Ensure it is an int
 )
 
 print("Creating display driver...")
@@ -49,9 +50,9 @@ display_driver = st7789.ST7789(
     data_bus=display_bus,
     display_width=int(_WIDTH),
     display_height=int(_HEIGHT),
-    reset_pin=int(RST),           # DIRECTLY as an integer, not as a Pin object!
+    reset_pin=int(RST),  # DIRECTLY as an integer, not as a Pin object!
     reset_state=st7789.STATE_LOW,
-    backlight_pin=None,           # Also None instead of Pin object
+    backlight_pin=None,  # Also None instead of Pin object
     color_space=lv.COLOR_FORMAT.RGB565,
     color_byte_order=st7789.BYTE_ORDER_BGR,
     rgb565_byte_swap=True,
@@ -74,11 +75,11 @@ print("Creating task handler...")
 th = task_handler.TaskHandler()
 print("Task handler created and running automatically!")
 
-
 # Register LVGL filesystem driver
 print("Registering LVGL filesystem driver...")
 try:
     from fs_driver import fs_register
+
     fs_drv = lv.fs_drv_t()
     fs_register(fs_drv, "S")
     print("Filesystem driver 'S:' registered successfully.")

@@ -1,8 +1,9 @@
 # weather.py
+import time
+
 import lvgl as lv
 import urequests
-import json
-import time
+
 from secrets import OPENWEATHERMAP_API_KEY, OPENWEATHERMAP_CITY, OPENWEATHERMAP_COUNTRY
 from timer import Timer
 
@@ -119,7 +120,8 @@ class WeatherScreen:
         """
         return self.screen
 
-    def _replace_umlauts(self, text):
+    @staticmethod
+    def _replace_umlauts(text):
         """
         Replace German umlauts with ASCII equivalents.
         """

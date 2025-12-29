@@ -48,15 +48,14 @@ def download_icon(icon_name: str, output_dir: Path, size: str = "@2x") -> bool:
         bool: True if the download was successful, False otherwise.
     """
     # Construct URL for OWM icons. Additional icons are assumed to be named directly.
-    if icon_name.startswith(("0", "1", "5")): # Heuristic for OWM icons
+    if icon_name.startswith(("0", "1", "5")):  # Heuristic for OWM icons
         url = f"{BASE_URL}{icon_name}{size}.png"
-    else: # Assume additional icons are already full names like 'wifi_on.png'
+    else:  # Assume additional icons are already full names like 'wifi_on.png'
         # For simplicity, we assume additional icons are not part of the OWM base URL
         # and would need to be fetched from a different source or copied manually.
         # This script focuses on OWM icons, so we'll skip direct download for these.
         print(f"Skipping download for non-OWM icon: {icon_name}. Please provide manually if needed.")
         return False
-
 
     output_path = output_dir / f"{icon_name}.png"
     try:
@@ -120,9 +119,9 @@ def main() -> None:
     # Define directories
     base_output_dir = Path("icons_png")
     original_size_dir = base_output_dir / "original"
-    esp32_target_dir = base_output_dir / "48x48" # Renamed to be more generic for final output for LVGL
+    esp32_target_dir = base_output_dir / "48x48"  # Renamed to be more generic for final output for LVGL
 
-    original_size_dir.mkdir(parents=True, exist_ok=True) # Ensure original directory exists
+    original_size_dir.mkdir(parents=True, exist_ok=True)  # Ensure original directory exists
 
     # Step 1: Download Icons
     print("\n[1/2] Downloading icons from OpenWeatherMap...")
@@ -130,23 +129,22 @@ def main() -> None:
 
     all_icon_names = []
     for code in ICON_CODES:
-        all_icon_names.append(f"{code}d") # Day version
-        all_icon_names.append(f"{code}n") # Night version
+        all_icon_names.append(f"{code}d")  # Day version
+        all_icon_names.append(f"{code}n")  # Night version
     # Adding additional icons to the list for processing
     all_icon_names.extend(ADDITIONAL_ICONS)
-
 
     for icon_name in all_icon_names:
         if download_icon(icon_name, original_size_dir):
             downloaded_count += 1
         elif icon_name in ADDITIONAL_ICONS:
-             # Create dummy files for additional icons if not downloaded, for resizing later
+            # Create dummy files for additional icons if not downloaded, for resizing later
             dummy_path = original_size_dir / f"{icon_name}.png"
             if not dummy_path.exists():
                 print(f"  Creating dummy PNG for {icon_name}. Please replace with actual icon if needed.")
                 # Create a simple white square as a placeholder
-                Image.new('RGB', (100, 100), color = 'white').save(dummy_path)
-                downloaded_count += 1 # Count dummy as processed
+                Image.new('RGB', (100, 100), color='white').save(dummy_path)
+                downloaded_count += 1  # Count dummy as processed
 
     print(f"\n✓ {downloaded_count} icons processed (downloaded or dummy created).")
 

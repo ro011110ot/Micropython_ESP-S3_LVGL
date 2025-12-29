@@ -1,6 +1,8 @@
-import network
 import time
+
+import network
 import ubinascii
+
 from secrets import WIFI_CREDENTIALS
 
 # --- Dynamische LED Erkennung ---
@@ -32,6 +34,7 @@ except ImportError:
             def off(self):
                 pass
 
+
         led = DummyLed()
         print("Keine Status-LED Datei gefunden. Fahre ohne LED fort.")
 
@@ -41,7 +44,7 @@ def connect():
     wlan.active(True)
 
     # MAC-Adresse auslesen und formatieren
-    mac = ubinascii.hexlify(wlan.config("mac"), ":").decode()
+    mac = ubinascii.hexlify(wlan.config("mac")).decode()
 
     for creds in WIFI_CREDENTIALS:
         wlan.disconnect()

@@ -48,7 +48,8 @@ class SensorScreen:
         self.mqtt.set_callback(self.handle_sensor_data)
         self.mqtt.subscribe("Sensors/#")
 
-    def _create_sensor_card(self, parent, name):
+    @staticmethod
+    def _create_sensor_card(parent, name):
         """
         Creates a new card widget for a sensor.
         """
@@ -59,7 +60,7 @@ class SensorScreen:
         card.set_style_radius(8, 0)
         card.set_style_border_width(0, 0)
         card.set_style_pad_hor(10, 0)
-        
+
         name_label = lv.label(card)
         name_label.set_text(name)
         name_label.align(lv.ALIGN.LEFT_MID, 0, 0)
@@ -93,7 +94,7 @@ class SensorScreen:
                     value = f"{float(value):.1f}"
                 except (ValueError, TypeError):
                     pass  # Keep original value if conversion fails
-            
+
             # Create a new card if sensor is seen for the first time
             if sensor_id not in self.sensors:
                 display_name = sensor_id.replace("Sensor_", "").replace("_", " ")
@@ -107,4 +108,3 @@ class SensorScreen:
 
         except Exception as e:
             print(f"Error handling sensor data: {e}")
-

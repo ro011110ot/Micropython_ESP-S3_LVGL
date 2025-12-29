@@ -62,8 +62,12 @@ class MQTT:
         """
         print(f"Connecting to MQTT broker at {self.broker}:{self.port}...")
         try:
+            self.client.set_last_will(f"status/{self.device_id}", "offline", retain=True)
             self.client.connect()
+            # Announce online status
+            self.client.publish(f"status/{self.device_id}", "online", retain=True)
             self.is_connected = True
+            self.client.subscribe("vps/monitor")
             print("MQTT connected successfully.")
             return True
         except OSError as e:
@@ -104,7 +108,6 @@ class MQTT:
             except OSError as e:
                 print(f"MQTT Error in check_msg: {e}")
                 self.is_connected = False
-
 
     def publish(self, sensor_data, topic="Sensors"):
         """

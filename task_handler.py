@@ -21,6 +21,10 @@ class TaskHandler:
         # Create hardware timer (ESP32-S3 has timers 0-3)
         self.timer = Timer(0)
 
+        # Place for the VPS-Values
+        self.client.set_callback(self._on_message)
+        self.vps_data = None
+
         # Initialize with periodic mode
         # IMPORTANT: period must be a number, not a string!
         self.timer.init(
@@ -49,3 +53,13 @@ class TaskHandler:
         if self.timer:
             self.timer.deinit()
             print("TaskHandler stopped")
+
+    def _on_message(self, topic, msg):
+        """Callback for incoming MQTT messages."""
+        topic_str = topic.decode()
+        try:
+            if topic_str == "vps/monitor":
+                self.vps_data = json.loads(msg)
+
+        except Exception as e:
+            print(f"MQTT Parsing Fehler: {e}")

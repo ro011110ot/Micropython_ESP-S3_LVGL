@@ -1,5 +1,6 @@
-import ntptime
 import time
+
+import ntptime
 from machine import RTC
 
 
