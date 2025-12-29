@@ -3,37 +3,42 @@ import time
 import machine
 import gc
 import wifi, ntp
-from mqtt_client import MQTT
 from display import Display
 from weather_screen import WeatherScreen
 from sensors_screen import SensorScreen
 from vps_monitor_screen import VPSMonitorScreen
+from data_manager import DataManager
+from mqtt_client import MQTT
 
 
 def main():
-    # Network and time synchronization
     wifi.connect()
     ntp.sync()
 
-    # Initialize MQTT client
+    data_mgr = DataManager()
     mqtt = MQTT()
-    mqtt.connect()
+    mqtt.set_callback(data_mgr.process_message)
 
-    # Watchdog timer to prevent system freezes (8 seconds timeout)
+    try:
+        mqtt.connect()
+        # Double subscription to be absolutely safe (Case Sensitivity)
+        mqtt.subscribe("Sensors/#")
+        mqtt.subscribe("sensors/#")
+        mqtt.subscribe("vps/monitor")
+        print("Subscribed to all variants.")
+    except Exception as e:
+        print(f"Connection failed: {e}")
+        time.sleep(5)
+        machine.reset()
+
     wdt = machine.WDT(timeout=8000)
-
-    # Initialize the display manager
     disp_man = Display()
 
-    # Initialize all screens and feed the watchdog during setup
-    wdt.feed()
+    # Initialize Screens
     weather = WeatherScreen(mqtt)
-    wdt.feed()
-    sensors = SensorScreen(mqtt)
-    wdt.feed()
+    sensors = SensorScreen(mqtt, data_mgr)
     vps = VPSMonitorScreen()
 
-    # Register screens in the display manager
     disp_man.add_screen("Weather", weather)
     disp_man.add_screen("Sensors", sensors)
     disp_man.add_screen("VPS", vps)
@@ -42,34 +47,46 @@ def main():
     idx = 0
 
     while True:
-        wdt.feed()  # Reset watchdog timer
-        mqtt.check_msg()
-
-        # Update VPS data if new messages arrived via MQTT
-        if mqtt.vps_data:
-            cpu = mqtt.vps_data.get("cpu", 0)
-            ram = mqtt.vps_data.get("ram", 0)
-            disk = mqtt.vps_data.get("disk", 0)
-            # Fetch raw uptime (seconds) from MQTT data
-            uptime = mqtt.vps_data.get("uptime", 0)
-
-            # Pass all values including uptime to the screen
-            vps.update_values(cpu, ram, disk, uptime)
-            mqtt.vps_data = None
-
-        # Cycle through the registered screens
-        disp_man.show_screen(screens[idx])
-        idx = (idx + 1) % len(screens)
-
-        # Internal loop for screen timing (approx. 10 seconds per screen)
-        for _ in range(100):
+        try:
             wdt.feed()
-            mqtt.check_msg()
-            weather.update_time()  # Keep the clock updated
-            time.sleep_ms(100)
 
-        # Clear memory after each screen cycle
-        gc.collect()
+            # Safe check_msg with automatic reset on Error -1
+            try:
+                mqtt.check_msg()
+            except Exception as e:
+                print(f"MQTT Error: {e}")
+                if "-1" in str(e) or "705" in str(e):
+                    print("SSL/Socket failure. Rebooting...")
+                    time.sleep(1)
+                    machine.reset()
+
+            current_name = screens[idx]
+            disp_man.show_screen(current_name)
+
+            for _ in range(100):
+                wdt.feed()
+                try:
+                    mqtt.check_msg()
+                except:
+                    pass
+
+                if current_name == "Weather":
+                    weather.update_time()
+                elif current_name == "Sensors":
+                    sensors.update_ui()
+                elif current_name == "VPS":
+                    v_data = data_mgr.data_store.get("vps", {})
+                    if v_data:
+                        vps.update_values(v_data.get("CPU", 0), v_data.get("RAM", 0),
+                                          v_data.get("DISK", 0), v_data.get("UPTIME", 0))
+                time.sleep_ms(100)
+
+            idx = (idx + 1) % len(screens)
+            gc.collect()
+
+        except Exception as global_err:
+            print(f"Global Loop Error: {global_err}")
+            machine.reset()
 
 
 if __name__ == "__main__":

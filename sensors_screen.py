@@ -1,59 +1,56 @@
 # sensors_screen.py
 import lvgl as lv
-import ujson
 
 
 class SensorScreen:
     """
-    Display sensor data in a structured table with a dark theme.
+    Displays sensor data in a table using data from DataManager.
     """
 
-    def __init__(self, mqtt):
+    def __init__(self, mqtt, data_mgr):
         self.mqtt = mqtt
+        self.data_mgr = data_mgr
         self.screen = lv.obj()
         self.screen.set_style_bg_color(lv.color_hex(0x121212), 0)
 
-        # Turquoise Header
-        title = lv.label(self.screen)
-        title.set_text("SENSOREN")
-        title.set_style_text_color(lv.color_hex(0x03DAC6), 0)
-        title.align(lv.ALIGN.TOP_MID, 0, 10)
-
-        # Create Table
+        # UI Elements: Table
         self.table = lv.table(self.screen)
         self.table.set_column_count(2)
-        self.table.set_column_width(0, 110)
-        self.table.set_column_width(1, 110)
+        self.table.set_column_width(0, 160)
+        self.table.set_column_width(1, 100)
         self.table.align(lv.ALIGN.TOP_MID, 0, 45)
 
-        # Dark Table Styling
+        # Header Row
+        self.table.set_cell_value(0, 0, "Sensor")
+        self.table.set_cell_value(0, 1, "Wert")
+
+        # Style
         self.table.set_style_bg_color(lv.color_hex(0x1E1E1E), 0)
         self.table.set_style_text_color(lv.color_hex(0xFFFFFF), 0)
-        self.table.set_style_border_width(0, 0)
 
-        self.sensor_map = {}  # Map sensor names to table rows
+        self.row_map = {}
+        self.next_row = 1
 
-        # Register MQTT callback
-        self.mqtt.set_callback(self.handle_msg)
-        self.mqtt.subscribe("Sensors/#")
+    def update_ui(self):
+        """
+        Iterates over stored sensor data and updates the table.
+        """
+        all_data = self.data_mgr.get_all_data()
+        sensors = all_data.get("sensors", {})
 
-    def handle_msg(self, topic, msg):
-        """Update table cells when MQTT data arrives."""
-        try:
-            data = ujson.loads(msg.decode())
-            name = data.get("id", "Unknown").split("_")[-1]
-            val = f"{data.get('value', '--')} {data.get('unit', '')}"
+        for sensor_id, val_str in sensors.items():
+            if sensor_id not in self.row_map:
+                row = self.next_row
+                self.row_map[sensor_id] = row
 
-            if name not in self.sensor_map:
-                row = len(self.sensor_map)
-                self.sensor_map[name] = row
-                self.table.set_cell_value(row, 0, name)
+                # Clean up the name like in your working version
+                display_name = sensor_id.replace("Sensor_", "").replace("_", " ")
+                self.table.set_cell_value(row, 0, display_name)
+                self.next_row += 1
 
-            row_idx = self.sensor_map[name]
-            self.table.set_cell_value(row_idx, 1, val)
-        except Exception as e:
-            print(f"Sensor display error: {e}")
+            # Update the value column
+            target_row = self.row_map[sensor_id]
+            self.table.set_cell_value(target_row, 1, val_str)
 
     def get_screen(self):
-        """Returns the LVGL screen object for the display manager."""
         return self.screen
