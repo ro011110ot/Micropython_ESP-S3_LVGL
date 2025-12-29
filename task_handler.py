@@ -2,37 +2,64 @@
 import lvgl as lv
 from machine import Timer
 
+
 class TaskHandler:
     """
-    Clean LVGL task handler using ESP32-S3 hardware timer.
-    This class only handles the UI refresh cycle.
+    LVGL task handler using ESP32-S3 hardware timer.
+    Uses Timer 0 with periodic callback.
     """
+
     def __init__(self, refresh_rate_ms=5):
         """
-        Initialize hardware timer 0 for LVGL.
+        Initialize the task handler with hardware timer.
+
+        Args:
+            refresh_rate_ms: How often to update LVGL (default 5ms = 200Hz)
         """
         self.refresh_rate_ms = refresh_rate_ms
+
+        # Create hardware timer (ESP32-S3 has timers 0-3)
         self.timer = Timer(0)
 
-        # Initialize timer for periodic LVGL execution
+        # Place for the VPS-Values
+        self.client.set_callback(self._on_message)
+        self.vps_data = None
+
+        # Initialize with periodic mode
+        # IMPORTANT: period must be a number, not a string!
         self.timer.init(
             mode=Timer.PERIODIC,
-            period=int(refresh_rate_ms),
+            period=int(refresh_rate_ms),  # Ensure it is an int
             callback=self._timer_callback
         )
-        print(f"TaskHandler initialized ({refresh_rate_ms}ms period)")
+
+        print(f"TaskHandler initialized (Hardware Timer 0, {refresh_rate_ms}ms period)")
 
     def _timer_callback(self, timer):
         """
-        Periodically called by the hardware timer to advance LVGL time.
+        Called by the hardware timer periodically.
+        This runs in interrupt context (hard IRQ).
         """
         try:
             lv.tick_inc(self.refresh_rate_ms)
             lv.task_handler()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"TaskHandler error: {e}")
 
     def deinit(self):
-        """Stop the hardware timer."""
+        """
+        Stop and deinitialize the timer.
+        """
         if self.timer:
             self.timer.deinit()
+            print("TaskHandler stopped")
+
+    def _on_message(self, topic, msg):
+        """Callback for incoming MQTT messages."""
+        topic_str = topic.decode()
+        try:
+            if topic_str == "vps/monitor":
+                self.vps_data = json.loads(msg)
+
+        except Exception as e:
+            print(f"MQTT Parsing Fehler: {e}")
