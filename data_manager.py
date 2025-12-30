@@ -5,7 +5,7 @@ import ujson
 class DataManager:
     """
     Central data storage. Handles incoming MQTT messages and
-    prepares them for the UI.
+    prepares them for the UI screens.
     """
 
     def __init__(self):
@@ -31,27 +31,27 @@ class DataManager:
             if topic == "vps/monitor":
                 for key in ["cpu", "ram", "disk", "uptime"]:
                     if key in payload:
-                        # Convert keys to UPPERCASE for the UI
+                        # Convert keys to UPPERCASE for the UI display
                         self.data_store["vps"][key.upper()] = payload[key]
 
             # 2. Sensor Data
             elif "Sensors" in topic:
                 sensor_id = payload.get("id", "")
 
-                # CLEANING: Remove the long hex ID from DS18B20 (e.g., Sensor_DS18B20_28a0...)
+                # CLEANING: Remove the long hex ID from DS18B20
+                # e.g., "Sensor_DS18B20_28a09eb3913cd838" -> "Sensor_DS18B20"
                 if "DS18B20" in sensor_id:
-                    # Keeps "Sensor_DS18B20" and removes everything after the last underscore
                     sensor_id = "_".join(sensor_id.split("_")[:2])
 
                 if sensor_id:
                     value = payload.get("value", "--")
                     unit = payload.get("unit", "")
-                    # Save formatted string for the UI
+                    # Store formatted string for the UI screens
                     self.data_store["sensors"][sensor_id] = f"{value} {unit}"
 
         except Exception as e:
-            # If JSON fails, show exactly what was in the message
             print(f"DataManager JSON Error: {e} | Content: {msg}")
 
     def get_all_data(self):
+        """Returns the current state of the data store."""
         return self.data_store

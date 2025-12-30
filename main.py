@@ -14,23 +14,21 @@ from mqtt_client import MQTT
 def setup_mqtt(mqtt, data_mgr, wdt=None):
     """
     Initializes and connects MQTT, feeding WDT to prevent SSL-related crashes.
-    English comments and docstrings.
     """
     try:
-        # Feed the watchdog before the heavy SSL handshake starts
         if wdt:
             wdt.feed()
 
+        # Connect attempt (Blocking SSL handshake)
         if mqtt.connect():
             # Subscribe to all necessary topics
             mqtt.subscribe("Sensors/#")
             mqtt.subscribe("sensors/#")
             mqtt.subscribe("vps/monitor")
 
-            # Feed again after successful handshake and subscriptions
             if wdt:
                 wdt.feed()
-            print("Subscribed to all variants and fed WDT.")
+            print("Subscribed and fed WDT.")
             return True
     except Exception as e:
         print(f"MQTT Setup failed: {e}")
@@ -38,18 +36,23 @@ def setup_mqtt(mqtt, data_mgr, wdt=None):
 
 
 def main():
-    # 1. Basic System Initialization
-    wifi.connect()
-    ntp.sync()
+    # 1. Hardware Watchdog (Increased to 15 seconds for SSL stability)
+    # 8 seconds is often too short for SSL handshakes on ESP32-S3
+    wdt = machine.WDT(timeout=15000)
 
-    # 2. Data and Communication Setup
+    # 2. Basic System Initialization
+    wifi.connect()
+    wdt.feed()
+
+    # Small delay for network stack stability
+    time.sleep(2)
+    ntp.sync()
+    wdt.feed()
+
+    # 3. Data and Communication Setup
     data_mgr = DataManager()
     mqtt = MQTT()
     mqtt.set_callback(data_mgr.process_message)
-
-    # 3. Hardware Watchdog (8 seconds timeout)
-    # This prevents the ESP32 from freezing permanently
-    wdt = machine.WDT(timeout=8000)
 
     # 4. Initial MQTT Connection
     if not setup_mqtt(mqtt, data_mgr, wdt):
@@ -74,36 +77,28 @@ def main():
 
     while True:
         try:
-            # Feed WDT at the start of each screen cycle
             wdt.feed()
             current_name = screens[idx]
             disp_man.show_screen(current_name)
 
-            # Internal loop for screen duration (approx. 10 seconds)
+            # Screen cycle loop
             for _ in range(100):
                 wdt.feed()
 
                 try:
-                    # Check for new MQTT messages
                     mqtt.check_msg()
                 except Exception as e:
-                    # Handle OSError -1 or SSL timeouts without a full reboot
                     print(f"MQTT Loop Error: {e}. Reconnecting...")
                     wdt.feed()
                     setup_mqtt(mqtt, data_mgr, wdt)
 
-                # Update UI elements based on the active screen
                 if current_name == "Weather":
                     weather.update_time()
-
                 elif current_name == "Sensors":
-                    # DataManager now provides cleaned IDs like 'Sensor_DS18B20'
                     sensors.update_ui()
-
                 elif current_name == "VPS":
                     v_data = data_mgr.data_store.get("vps", {})
                     if v_data:
-                        # Using UPPERCASE keys provided by data_manager.py
                         vps.update_values(
                             v_data.get("CPU", 0),
                             v_data.get("RAM", 0),
@@ -111,10 +106,8 @@ def main():
                             v_data.get("UPTIME", 0)
                         )
 
-                # Small delay to keep the system responsive
                 time.sleep_ms(100)
 
-            # Move to the next screen and clean up memory
             idx = (idx + 1) % len(screens)
             gc.collect()
 

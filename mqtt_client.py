@@ -7,9 +7,8 @@ from umqtt.simple import MQTTClient
 
 class MQTT:
     """
-    Universal MQTT client for both Dashboard (Receiver) and Sensors (Sender).
-    Supports SSL, Retained Messages, and dynamic Callbacks.
-    English comments and docstrings.
+    Universal MQTT client supporting SSL, Retained Messages, and dynamic Callbacks.
+    Optimized for ESP32-S3 memory management during SSL handshakes.
     """
 
     def __init__(self):
@@ -28,9 +27,9 @@ class MQTT:
     def _init_client(self):
         """
         Initializes the underlying MicroPython MQTT client with clean memory.
-        Crucial for SSL stability on ESP32.
+        Crucial to prevent MemoryAllocation errors during SSL context creation.
         """
-        gc.collect() # Free memory before allocating new SSL buffers
+        gc.collect()
         self.client = MQTTClient(
             client_id=self.device_id,
             server=self.broker,
@@ -47,8 +46,6 @@ class MQTT:
         try:
             t = topic.decode()
             m = msg.decode()
-
-            # Print for debugging on the Dashboard
             print(f"MQTT RECEIVE: [{t}] -> {m}")
 
             for cb in self.callbacks:
@@ -65,18 +62,20 @@ class MQTT:
             self.callbacks.append(cb)
 
     def connect(self):
-        """Connects to the broker. Returns True if successful."""
+        """
+        Connects to the broker.
+        Forces garbage collection before SSL handshake to maximize available heap.
+        """
         print(f"Connecting to MQTT via {'SSL' if self.use_ssl else 'TCP'}...")
+        gc.collect()
         try:
-            # Set Last Will and Testament (LWT)
             lwt_topic = f"status/{self.device_id}"
             self.client.set_last_will(lwt_topic, "offline", retain=True)
 
+            # This call is blocking and can take several seconds with SSL
             self.client.connect()
 
-            # Publish online status
             self.client.publish(lwt_topic, "online", retain=True)
-
             self.is_connected = True
             print("MQTT connected successfully.")
             return True
@@ -86,7 +85,7 @@ class MQTT:
             return False
 
     def subscribe(self, topic):
-        """Subscribes to a topic. Used by the Dashboard."""
+        """Subscribes to a topic."""
         if self.is_connected:
             try:
                 self.client.subscribe(topic)
@@ -99,10 +98,7 @@ class MQTT:
         return False
 
     def publish(self, data, topic="Sensors", retain=False):
-        """
-        Publishes data as JSON.
-        Used by the Sensors to send updates.
-        """
+        """Publishes data as JSON."""
         if not self.is_connected:
             return False
         try:
@@ -111,14 +107,13 @@ class MQTT:
             return True
         except Exception as e:
             print(f"Publish failed: {e}")
-            # Mark as disconnected so the sender can try to reconnect
             self.is_connected = False
             return False
 
     def check_msg(self):
         """
-        Checks for new messages. Handles socket errors and connection state.
-        Vital for the Dashboard loop to detect connection loss.
+        Checks for new messages.
+        Re-initializes client on OSError to clear corrupted socket states.
         """
         if not self.is_connected:
             return
@@ -126,11 +121,10 @@ class MQTT:
         try:
             self.client.check_msg()
         except OSError as e:
-            # Error -1 often means socket closed or timeout
             print(f"MQTT connection lost (OSError {e}).")
             self.is_connected = False
-            self._init_client() # Re-initialize for next connect attempt
-            raise e # Raise to notify main loop for reconnection
+            self._init_client()
+            raise e
         except Exception as e:
             print(f"MQTT check_msg error: {e}")
             self.is_connected = False
