@@ -24,7 +24,7 @@ except ImportError:
         led = DummyLed()
         print("No status LED file found. Proceeding without LED.")
 
-def connect():
+def connect(wdt=None):
     """
     Connects to the best available WiFi network from secrets.py.
     """
@@ -45,6 +45,8 @@ def connect():
         max_wait = 10
         while max_wait > 0:
             led.wifi_connecting()
+            if wdt:
+                wdt.feed()
             if wlan.isconnected():
                 break
             max_wait -= 1

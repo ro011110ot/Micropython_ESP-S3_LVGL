@@ -41,7 +41,7 @@ def main():
     wdt = machine.WDT(timeout=15000)
 
     # 2. Basic System Initialization
-    wifi.connect()
+    wifi.connect(wdt)
     wdt.feed()
 
     # Small delay for network stack stability
