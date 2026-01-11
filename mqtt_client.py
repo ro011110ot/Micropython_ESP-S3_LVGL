@@ -36,8 +36,6 @@ class MQTT:
     def _init_client(self):
         """
         Initialize the underlying MicroPython MQTT client.
-
-        Uses garbage collection to prevent MemoryAllocation errors.
         """
         gc.collect()
         self.client = MQTTClient(
@@ -61,10 +59,10 @@ class MQTT:
             for cb in self.callbacks:
                 try:
                     cb(t, m)
-                except (ValueError, TypeError, OSError) as e:  # noqa: PERF203
-                    print("Callback execution error:", e)
+                except (ValueError, TypeError, OSError) as e:
+                    print(f"Callback execution error: {e}")
         except (UnicodeError, AttributeError) as e:
-            print("MQTT Decode error:", e)
+            print(f"MQTT Decode error: {e}")
 
     def set_callback(self, cb):
         """Register a function to handle incoming messages."""
@@ -72,87 +70,74 @@ class MQTT:
             self.callbacks.append(cb)
 
     def connect(self):
-        """
-        Connect to the broker.
-
-        Forces garbage collection before SSL handshake for max heap.
-        """
-        print("Connecting to MQTT via {}...".format("SSL" if self.use_ssl else "TCP"))
+        """Connect to the broker with clean socket state."""
+        self.disconnect()
+        print(f"Connecting to MQTT via {'SSL' if self.use_ssl else 'TCP'}...")
         gc.collect()
         try:
             lwt_topic = f"status/{self.device_id}"
             self.client.set_last_will(lwt_topic, "offline", retain=True)
             self.client.connect()
-        except OSError as e:
-            print("MQTT Connection failed:", e)
-            self.is_connected = False
-            return False
-        else:
             self.client.publish(lwt_topic, "online", retain=True)
             self.is_connected = True
             print("MQTT connected successfully.")
             return True
+        except OSError as e:
+            print(f"MQTT Connection failed: {e}")
+            self.is_connected = False
+            return False
+
+    def disconnect(self):
+        """Closes the connection and resets the client state."""
+        self.is_connected = False
+        if self.client:
+            try:
+                self.client.disconnect()
+            except Exception:
+                pass
 
     def subscribe(self, topic):
         """Subscribe to a specific topic."""
         if self.is_connected:
             try:
                 self.client.subscribe(topic)
-                print("Subscribed:", topic)
+                print(f"Subscribed: {topic}")
+                return True
             except OSError:
                 self.is_connected = False
-                return False
-            else:
-                return True
         return False
 
     def publish(self, data, topic="Sensors", *, retain=False):
-        """
-        Publish data as JSON.
-
-        The '*' makes 'retain' a keyword-only argument (FBT002).
-        """
+        """Publish data as JSON."""
         if not self.is_connected:
             return False
         try:
             payload = json.dumps(data)
             self.client.publish(topic, payload, retain=retain)
+            return True
         except (OSError, ValueError):
             self.is_connected = False
             return False
-        else:
-            return True
 
     def ping(self):
         """Send a keepalive ping to the broker."""
         if not self.is_connected:
             return False
-
         try:
             self.client.ping()
+            return True
         except OSError:
             self.is_connected = False
             return False
-        else:
-            # Only executed if NO OSError occurred
-            return True
 
     def check_msg(self):
-        """
-        Check for new messages.
-
-        Re-initializes client on OSError to clear corrupted states.
-        """
+        """Check for new messages and handle connection loss."""
         if not self.is_connected:
             return
 
         try:
             self.client.check_msg()
-        except OSError:
-            print("MQTT connection lost (OSError).")
-            self.is_connected = False
-            self._init_client()
-            raise  # TRY201: Use raise without 'e'
-        except Exception:
+        except OSError as e:
+            print(f"MQTT connection lost: {e}")
             self.is_connected = False
             raise
