@@ -1,14 +1,22 @@
-# vps_monitor_screen.py
+"""
+Display VPS metrics on an LVGL screen.
+
+This module provides a visual representation of CPU, RAM, and disk usage
+alongside formatted system uptime.
+"""
+
 import lvgl as lv
 
 
 class VPSMonitorScreen:
     """
-    VPS Monitor screen displaying CPU, RAM, Disk usage and formatted Uptime.
+    VPS Monitor screen displaying CPU, RAM, and disk usage.
+
     Converts raw seconds into a human-readable format.
     """
 
     def __init__(self):
+        """Initialize the UI components and set the dark theme."""
         self.screen = lv.obj()
         # Set dark theme background
         self.screen.set_style_bg_color(lv.color_hex(0x0A0E27), 0)
@@ -37,28 +45,32 @@ class VPSMonitorScreen:
         self.uptime_label.align(lv.ALIGN.TOP_LEFT, 15, 260)
         self.uptime_label.set_width(210)
 
-    def _format_uptime(self, seconds):
+    @staticmethod
+    def _format_uptime(seconds):
         """
-        Converts raw seconds into a string: 'Xd Xh Xm'.
+        Convert raw seconds into a string: 'Xd Xh Xm'.
+
+        Returns:
+            str: Formatted uptime string or original value on error.
+
         """
         try:
-            s = int(seconds)
-            days = s // 86400
-            hours = (s % 86400) // 3600
-            minutes = (s % 3600) // 60
+            total_seconds = int(seconds)
+        except (ValueError, TypeError):
+            # Fallback if input is not a valid number (BLE001)
+            return str(seconds)
+        else:
+            # Logic moved to else block (TRY300)
+            days = total_seconds // 86400
+            hours = (total_seconds % 86400) // 3600
+            minutes = (total_seconds % 3600) // 60
 
             if days > 0:
-                return "{:d}d {:d}h {:d}m".format(days, hours, minutes)
-            else:
-                return "{:d}h {:d}m".format(hours, minutes)
-        except Exception:
-            # Fallback if input is not a valid number
-            return str(seconds)
+                return f"{days:d}d {hours:d}h {minutes:d}m"
+            return f"{hours:d}h {minutes:d}m"
 
     def _create_metric(self, name, y_pos):
-        """
-        Helper to create a label and a bar for a specific metric.
-        """
+        """Create a label and a bar for a specific metric."""
         lbl = lv.label(self.screen)
         lbl.set_text(name)
         lbl.set_style_text_color(lv.color_hex(0xAAAAAA), 0)
@@ -73,8 +85,9 @@ class VPSMonitorScreen:
 
     def update_values(self, cpu, ram, disk, uptime_raw="--"):
         """
-        Updates bars and formats the uptime text.
-        Uses 0 for animation parameter to ensure compatibility with LVGL v9.
+        Update bars and format the uptime text.
+
+        Uses 0 for animation parameter for LVGL v9 compatibility.
         """
         try:
             # Set bar values (0 = no animation)
@@ -85,9 +98,10 @@ class VPSMonitorScreen:
             # Apply formatting to raw uptime seconds
             formatted_uptime = self._format_uptime(uptime_raw)
             self.uptime_label.set_text(formatted_uptime)
-        except Exception as e:
+        except (ValueError, TypeError, OSError) as e:
+            # Specific exceptions for data conversion and LVGL interaction
             print("Error updating VPS values:", e)
 
     def get_screen(self):
-        """Returns the screen instance for display management."""
+        """Return the screen instance for display management."""
         return self.screen

@@ -1,17 +1,26 @@
-# mqtt_client.py
+"""
+Handle MQTT communication for ESP32.
+
+This module provides a universal MQTT client supporting SSL and
+dynamic callbacks, optimized for ESP32-S3 memory management.
+"""
+
+import gc
 import json
 import secrets
-import time
-import gc
+
 from umqtt.simple import MQTTClient
+
 
 class MQTT:
     """
-    Universal MQTT client supporting SSL, Retained Messages, and dynamic Callbacks.
-    Optimized for ESP32-S3 memory management during SSL handshakes.
+    Universal MQTT client for ESP32-S3.
+
+    Supports SSL, Retained Messages, and dynamic Callbacks.
     """
 
     def __init__(self):
+        """Initialize credentials and client state."""
         self.broker = secrets.MQTT_BROKER
         self.port = secrets.MQTT_PORT
         self.user = secrets.MQTT_USER
@@ -26,8 +35,9 @@ class MQTT:
 
     def _init_client(self):
         """
-        Initializes the underlying MicroPython MQTT client with clean memory.
-        Crucial to prevent MemoryAllocation errors during SSL context creation.
+        Initialize the underlying MicroPython MQTT client.
+
+        Uses garbage collection to prevent MemoryAllocation errors.
         """
         gc.collect()
         self.client = MQTTClient(
@@ -37,12 +47,12 @@ class MQTT:
             user=self.user,
             password=self.password,
             keepalive=60,
-            ssl=self.use_ssl
+            ssl=self.use_ssl,
         )
         self.client.set_callback(self._internal_callback)
 
     def _internal_callback(self, topic, msg):
-        """Routes incoming messages to all registered listeners."""
+        """Route incoming messages to all registered listeners."""
         try:
             t = topic.decode()
             m = msg.decode()
@@ -51,81 +61,84 @@ class MQTT:
             for cb in self.callbacks:
                 try:
                     cb(t, m)
-                except Exception as e:
-                    print(f"Callback error: {e}")
-        except Exception as e:
-            print(f"MQTT Decode error: {e}")
+                except (ValueError, TypeError, OSError) as e:  # noqa: PERF203
+                    print("Callback execution error:", e)
+        except (UnicodeError, AttributeError) as e:
+            print("MQTT Decode error:", e)
 
     def set_callback(self, cb):
-        """Registers a function to handle incoming messages."""
+        """Register a function to handle incoming messages."""
         if cb not in self.callbacks:
             self.callbacks.append(cb)
 
     def connect(self):
         """
-        Connects to the broker.
-        Forces garbage collection before SSL handshake to maximize available heap.
+        Connect to the broker.
+
+        Forces garbage collection before SSL handshake for max heap.
         """
-        print(f"Connecting to MQTT via {'SSL' if self.use_ssl else 'TCP'}...")
+        print("Connecting to MQTT via {}...".format("SSL" if self.use_ssl else "TCP"))
         gc.collect()
         try:
             lwt_topic = f"status/{self.device_id}"
             self.client.set_last_will(lwt_topic, "offline", retain=True)
-
-            # This call is blocking and can take several seconds with SSL
             self.client.connect()
-
+        except OSError as e:
+            print("MQTT Connection failed:", e)
+            self.is_connected = False
+            return False
+        else:
             self.client.publish(lwt_topic, "online", retain=True)
             self.is_connected = True
             print("MQTT connected successfully.")
             return True
-        except Exception as e:
-            print(f"MQTT Connection failed: {e}")
-            self.is_connected = False
-            return False
 
     def subscribe(self, topic):
-        """Subscribes to a topic."""
+        """Subscribe to a specific topic."""
         if self.is_connected:
             try:
                 self.client.subscribe(topic)
-                print(f"Subscribed: {topic}")
-                return True
-            except Exception as e:
-                print(f"Subscription failed: {e}")
+                print("Subscribed:", topic)
+            except OSError:
                 self.is_connected = False
                 return False
+            else:
+                return True
         return False
 
-    def publish(self, data, topic="Sensors", retain=False):
-        """Publishes data as JSON."""
+    def publish(self, data, topic="Sensors", *, retain=False):
+        """
+        Publish data as JSON.
+
+        The '*' makes 'retain' a keyword-only argument (FBT002).
+        """
         if not self.is_connected:
             return False
         try:
             payload = json.dumps(data)
             self.client.publish(topic, payload, retain=retain)
-            return True
-        except Exception as e:
-            print(f"Publish failed: {e}")
+        except (OSError, ValueError):
             self.is_connected = False
             return False
+        else:
+            return True
 
     def check_msg(self):
         """
-        Checks for new messages.
-        Re-initializes client on OSError to clear corrupted socket states.
+        Check for new messages.
+
+        Re-initializes client on OSError to clear corrupted states.
         """
         if not self.is_connected:
             return
 
         try:
             self.client.check_msg()
-        except OSError as e:
-            print(f"MQTT connection lost (OSError {e}).")
+        except OSError:
+            print("MQTT connection lost (OSError).")
             self.is_connected = False
             self._init_client()
-            raise e
-        except Exception as e:
-            print(f"MQTT check_msg error: {e}")
+            raise  # TRY201: Use raise without 'e'
+        except Exception:
             self.is_connected = False
-            raise e
+            raise

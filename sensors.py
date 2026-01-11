@@ -1,58 +1,78 @@
-# sensors.py
+"""
+Provide sensor reading capabilities for ESP32.
+
+This module handles the interaction with physical sensors like the DHT11
+and returns structured data based on the provided configuration.
+"""
+
 import time
+
+import dht
+from config import SENSORS
 from machine import Pin
 
-try:
-    import dht
-except ImportError:
-    dht = None
 
 def _read_dht11(config):
-    """Reads temperature and humidity from a DHT11 sensor."""
-    if dht is None: return []
-    
-    try:
-        sensor = dht.DHT11(Pin(config["pin"]))
-        sensor.measure()
-        time.sleep(1) # Stability delay
-        
-        readings = []
-        # Add temperature reading
-        readings.append({
-            "type": "DHT11",
-            "data": {
-                "id": config["provides"]["temperature"]["id"],
-                "value": sensor.temperature(),
-                "unit": config["provides"]["temperature"]["unit"]
-            }
-        })
-        # Add humidity reading
-        readings.append({
-            "type": "DHT11",
-            "data": {
-                "id": config["provides"]["humidity"]["id"],
-                "value": sensor.humidity(),
-                "unit": config["provides"]["humidity"]["unit"]
-            }
-        })
-        return readings
-    except Exception as e:
-        print(f"DHT11 reading error on pin {config['pin']}: {e}")
+    """
+    Read temperature and humidity from a DHT11 sensor.
+
+    Returns:
+            list: A list of reading dictionaries or an empty list on failure.
+
+    """
+    if dht is None:
         return []
 
+    sensor = dht.DHT11(Pin(config["pin"]))
+
+    try:
+        # Micro-level delay for sensor stability
+        time.sleep_ms(1000)
+        sensor.measure()
+    except OSError as e:
+        # Catching specific OSError instead of blind Exception
+        print(f"DHT11 hardware error on pin {config['pin']}: {e}")
+        return []
+    else:
+        # This part only runs if sensor.measure() succeeded (TRY300)
+        readings = [
+            {
+                "type": "DHT11",
+                "data": {
+                    "id": config["provides"]["temperature"]["id"],
+                    "value": sensor.temperature(),
+                    "unit": config["provides"]["temperature"]["unit"],
+                },
+            },
+            {
+                "type": "DHT11",
+                "data": {
+                    "id": config["provides"]["humidity"]["id"],
+                    "value": sensor.humidity(),
+                    "unit": config["provides"]["humidity"]["unit"],
+                },
+            },
+        ]
+        return readings
+
+
 def read_all_sensors():
-    """Reads all sensors defined in config.py."""
-    from config import SENSORS
+    """
+    Read all sensors defined in config.py.
+
+    Returns:
+            list: All collected sensor readings.
+
+    """
     all_readings = []
 
     print("\n--- Reading indoor sensors ---")
-    for name, cfg in SENSORS.items():
+    for cfg in SENSORS.values():
         if not cfg.get("active", False):
             continue
 
         if cfg["type"] == "DHT11":
             all_readings.extend(_read_dht11(cfg))
-        # Add other sensor types (e.g., LDR or Button) if needed
-            
+
     print("--- Finished reading sensors ---")
     return all_readings

@@ -54,7 +54,9 @@ def download_icon(icon_name: str, output_dir: Path, size: str = "@2x") -> bool:
         # For simplicity, we assume additional icons are not part of the OWM base URL
         # and would need to be fetched from a different source or copied manually.
         # This script focuses on OWM icons, so we'll skip direct download for these.
-        print(f"Skipping download for non-OWM icon: {icon_name}. Please provide manually if needed.")
+        print(
+            f"Skipping download for non-OWM icon: {icon_name}. Please provide manually if needed."
+        )
         return False
 
     output_path = output_dir / f"{icon_name}.png"
@@ -78,7 +80,9 @@ def download_icon(icon_name: str, output_dir: Path, size: str = "@2x") -> bool:
         return False
 
 
-def resize_icons(input_dir: Path, output_dir: Path, target_size: tuple = (48, 48)) -> None:
+def resize_icons(
+    input_dir: Path, output_dir: Path, target_size: tuple = (48, 48)
+) -> None:
     """
     Resizes all PNG icons in the input directory to a target size.
 
@@ -119,9 +123,13 @@ def main() -> None:
     # Define directories
     base_output_dir = Path("icons_png")
     original_size_dir = base_output_dir / "original"
-    esp32_target_dir = base_output_dir / "48x48"  # Renamed to be more generic for final output for LVGL
+    esp32_target_dir = (
+        base_output_dir / "48x48"
+    )  # Renamed to be more generic for final output for LVGL
 
-    original_size_dir.mkdir(parents=True, exist_ok=True)  # Ensure original directory exists
+    original_size_dir.mkdir(
+        parents=True, exist_ok=True
+    )  # Ensure original directory exists
 
     # Step 1: Download Icons
     print("\n[1/2] Downloading icons from OpenWeatherMap...")
@@ -141,9 +149,11 @@ def main() -> None:
             # Create dummy files for additional icons if not downloaded, for resizing later
             dummy_path = original_size_dir / f"{icon_name}.png"
             if not dummy_path.exists():
-                print(f"  Creating dummy PNG for {icon_name}. Please replace with actual icon if needed.")
+                print(
+                    f"  Creating dummy PNG for {icon_name}. Please replace with actual icon if needed."
+                )
                 # Create a simple white square as a placeholder
-                Image.new('RGB', (100, 100), color='white').save(dummy_path)
+                Image.new("RGB", (100, 100), color="white").save(dummy_path)
                 downloaded_count += 1  # Count dummy as processed
 
     print(f"\n✓ {downloaded_count} icons processed (downloaded or dummy created).")
@@ -159,9 +169,11 @@ def main() -> None:
     print(f"\nYour icons are prepared in the '{esp32_target_dir}' directory.")
     print("\nNext Steps:")
     print(f"  1. Review '{esp32_target_dir}' for your ready-to-convert PNG icons.")
-    print(f"  2. Run 'convert_icons.py' (located in the same 'scripts' folder).")
-    print(f"     It will convert these PNGs into LVGL-compatible '.bin' files.")
-    print(f"  3. Copy the resulting '.bin' files from the 'icons' folder to your ESP32's '/icons' directory.")
+    print("  2. Run 'convert_icons.py' (located in the same 'scripts' folder).")
+    print("     It will convert these PNGs into LVGL-compatible '.bin' files.")
+    print(
+        "  3. Copy the resulting '.bin' files from the 'icons' folder to your ESP32's '/icons' directory."
+    )
     print("=" * 60)
 
 

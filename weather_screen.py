@@ -1,9 +1,10 @@
 # weather_screen.py
-import time
 import gc
+import time
+from secrets import OPENWEATHERMAP_API_KEY, OPENWEATHERMAP_CITY, OPENWEATHERMAP_COUNTRY
+
 import lvgl as lv
 import urequests
-from secrets import OPENWEATHERMAP_API_KEY, OPENWEATHERMAP_CITY, OPENWEATHERMAP_COUNTRY
 
 # --- UI Colors ---
 COLOR_BG = 0x0A0E27
@@ -15,6 +16,8 @@ COLOR_ACCENT = 0xFFB800
 
 class WeatherScreen:
     """
+    LVGL Wearther Screen.
+
     Weather screen with tile-based layout, German umlaut correction,
     and support for PNG icons via the 'S:' filesystem driver.
     """
@@ -67,12 +70,23 @@ class WeatherScreen:
         self.wind_val = self._create_tile(5, 240, "Wind Speed", COLOR_ACCENT)
         self.pres_val = self._create_tile(125, 240, "Pressure", 0x7B2FFF)
 
-    def _replace_umlauts(self, text):
+    @staticmethod
+    def _replace_umlauts(text):
         """Replaces German umlauts to ensure correct display rendering."""
-        if not text: return ""
-        reps = {'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'Ä': 'Ae', 'Ö': 'Oe', 'Ü': 'Ue', 'ß': 'ss'}
+        if not text:
+            return ""
+        reps = {
+            "ä": "ae",
+            "ö": "oe",
+            "ü": "ue",
+            "Ä": "Ae",
+            "Ö": "Oe",
+            "Ü": "Ue",
+            "ß": "ss",
+        }
         res = str(text)
-        for k, v in reps.items(): res = res.replace(k, v)
+        for k, v in reps.items():
+            res = res.replace(k, v)
         return res
 
     def _create_card(self, x, y, w, h):
@@ -105,8 +119,8 @@ class WeatherScreen:
     def update_time(self):
         """Updates the date and clock labels using local time."""
         t = time.localtime()
-        self.date_label.set_text("{:02d}.{:02d}.{:04d}".format(t[2], t[1], t[0]))
-        self.time_label.set_text("{:02d}:{:02d}:{:02d}".format(t[3], t[4], t[5]))
+        self.date_label.set_text(f"{t[2]:02d}.{t[1]:02d}.{t[0]:04d}")
+        self.time_label.set_text(f"{t[3]:02d}:{t[4]:02d}:{t[5]:02d}")
 
     def update_weather(self):
         """Fetches current weather data from OpenWeatherMap API."""
@@ -121,21 +135,27 @@ class WeatherScreen:
             self.hum_val.set_text("{} %".format(data["main"]["humidity"]))
             self.wind_val.set_text("{:.1f} kmh".format(data["wind"]["speed"] * 3.6))
             self.pres_val.set_text("{} hPa".format(data["main"]["pressure"]))
-            self.desc_label.set_text(self._replace_umlauts(data["weather"][0]["description"]))
+            self.desc_label.set_text(
+                self._replace_umlauts(data["weather"][0]["description"]),
+            )
 
             # Handle weather icon loading via LVGL S: drive
             icon_code = data["weather"][0]["icon"]
             if icon_code != self.current_icon:
-                path = "S:/icons_png/{}.png".format(icon_code)
+                path = f"S:/icons_png/{icon_code}.png"
                 print(f"Update Weather Icon: {path}")
                 try:
                     self.weather_icon.set_src(path)
                     self.current_icon = icon_code
                     self.weather_icon.invalidate()  # Force re-draw
-                except Exception as e:
+
+                except OSError as e:
+                    # Specifically catch file system errors (e.g., file not found or corrupted)
                     print("Icon Loading Error:", e)
 
-        except Exception as e:
+        except (OSError, KeyError, ValueError) as e:
+            # OSError: Connection issues
+            # KeyError/ValueError: Unexpected data format from API
             print("Weather Update Failed:", e)
             self.desc_label.set_text("No Data")
 

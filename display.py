@@ -1,5 +1,10 @@
 # display.py
-import lcd_bus, lvgl as lv, machine, st7789, task_handler, fs_driver
+import fs_driver
+import lcd_bus
+import lvgl as lv
+import machine
+import st7789
+import task_handler
 from micropython import const
 
 _WIDTH, _HEIGHT = const(240), const(320)
@@ -19,7 +24,7 @@ driver = st7789.ST7789(
     reset_state=st7789.STATE_LOW,
     color_space=lv.COLOR_FORMAT.RGB565,
     color_byte_order=st7789.BYTE_ORDER_BGR,
-    rgb565_byte_swap=True
+    rgb565_byte_swap=True,
 )
 driver.init()
 driver.set_backlight(100)
@@ -27,13 +32,14 @@ driver.set_backlight(100)
 # WICHTIG: Filesystem fuer die Icons registrieren
 try:
     fs_drv = lv.fs_drv_t()
-    fs_driver.fs_register(fs_drv, 'S')
+    fs_driver.fs_register(fs_drv, "S")
     print("Filesystem driver 'S:' registered successfully.")
-except Exception as e:
+except OSError as e:
     print("FS Driver Error:", e)
 
 # Hintergrund-Task fuer LVGL
 th = task_handler.TaskHandler()
+
 
 class Display:
     def __init__(self):

@@ -1,67 +1,48 @@
-# main.py
-import time
-import machine
+"""
+Main entry point for the ESP32-S3 display system.
+
+Coordinates Wi-Fi, NTP, MQTT, and the LVGL-based UI screens while
+ensuring system stability via a Hardware Watchdog.
+"""
+
 import gc
-import wifi, ntp
+import time
+
+import machine
+import ntp
+import wifi
+from data_manager import DataManager
 from display import Display
-from weather_screen import WeatherScreen
+from mqtt_client import MQTT
 from sensors_screen import SensorScreen
 from vps_monitor_screen import VPSMonitorScreen
-from data_manager import DataManager
-from mqtt_client import MQTT
+from weather_screen import WeatherScreen
 
 
-def setup_mqtt(mqtt, data_mgr, wdt=None):
-    """
-    Initializes and connects MQTT, feeding WDT to prevent SSL-related crashes.
-    """
+def setup_mqtt(mqtt, wdt=None):
+    """Initialize and connect MQTT with WDT feeding."""
     try:
         if wdt:
             wdt.feed()
 
-        # Connect attempt (Blocking SSL handshake)
         if mqtt.connect():
-            # Subscribe to all necessary topics
             mqtt.subscribe("Sensors/#")
             mqtt.subscribe("sensors/#")
             mqtt.subscribe("vps/monitor")
-
             if wdt:
                 wdt.feed()
-            print("Subscribed and fed WDT.")
             return True
-    except Exception as e:
+    except OSError as e:
         print(f"MQTT Setup failed: {e}")
     return False
 
 
-def main():
-    # 1. Hardware Watchdog (Increased to 15 seconds for SSL stability)
-    # 8 seconds is often too short for SSL handshakes on ESP32-S3
-    wdt = machine.WDT(timeout=15000)
+def init_ui(disp_man, mqtt, data_mgr):
+    """
+    Initialize all UI screens and add them to the display manager.
 
-    # 2. Basic System Initialization
-    wifi.connect(wdt)
-    wdt.feed()
-
-    # Small delay for network stack stability
-    time.sleep(2)
-    ntp.sync()
-    wdt.feed()
-
-    # 3. Data and Communication Setup
-    data_mgr = DataManager()
-    mqtt = MQTT()
-    mqtt.set_callback(data_mgr.process_message)
-
-    # 4. Initial MQTT Connection
-    if not setup_mqtt(mqtt, data_mgr, wdt):
-        print("Initial connection failed. Resetting in 5s...")
-        time.sleep(5)
-        machine.reset()
-
-    # 5. UI Initialization
-    disp_man = Display()
+    This helper reduces the statement count of the main function.
+    """
     weather = WeatherScreen(mqtt)
     sensors = SensorScreen(mqtt, data_mgr)
     vps = VPSMonitorScreen()
@@ -70,28 +51,52 @@ def main():
     disp_man.add_screen("Sensors", sensors)
     disp_man.add_screen("VPS", vps)
 
-    screens = ["Weather", "Sensors", "VPS"]
+    return ["Weather", "Sensors", "VPS"], weather, sensors, vps
+
+
+def main():
+    """Run the main system loop and initialize hardware."""
+    wdt = machine.WDT(timeout=15000)
+
+    # 1. Network Initialization
+    wifi.connect(wdt)
+    wdt.feed()
+    time.sleep_ms(2000)
+    ntp.sync()
+    wdt.feed()
+
+    # 2. Data and Communication
+    data_mgr = DataManager()
+    mqtt = MQTT()
+    mqtt.set_callback(data_mgr.process_message)
+
+    if not setup_mqtt(mqtt, wdt):
+        print("Initial connection failed. Resetting...")
+        time.sleep_ms(5000)
+        machine.reset()
+
+    # 3. UI Setup (Refactored to solve PLR0915)
+    disp_man = Display()
+    screen_names, weather, sensors, vps = init_ui(disp_man, mqtt, data_mgr)
     idx = 0
 
     print("Entering main loop...")
 
-    while True:
-        try:
+    # 4. Global Loop with optimized try-except (PERF203)
+    try:
+        while True:
             wdt.feed()
-            current_name = screens[idx]
+            current_name = screen_names[idx]
             disp_man.show_screen(current_name)
 
-            # Screen cycle loop
             for _ in range(100):
                 wdt.feed()
-
                 try:
                     mqtt.check_msg()
-                except Exception as e:
-                    print(f"MQTT Loop Error: {e}. Reconnecting...")
-                    wdt.feed()
-                    setup_mqtt(mqtt, data_mgr, wdt)
+                except (OSError, AttributeError):
+                    setup_mqtt(mqtt, wdt)
 
+                # Update current screen logic
                 if current_name == "Weather":
                     weather.update_time()
                 elif current_name == "Sensors":
@@ -103,18 +108,17 @@ def main():
                             v_data.get("CPU", 0),
                             v_data.get("RAM", 0),
                             v_data.get("DISK", 0),
-                            v_data.get("UPTIME", 0)
+                            v_data.get("UPTIME", 0),
                         )
-
                 time.sleep_ms(100)
 
-            idx = (idx + 1) % len(screens)
+            idx = (idx + 1) % len(screen_names)
             gc.collect()
 
-        except Exception as global_err:
-            print(f"Global Loop Error: {global_err}")
-            time.sleep(2)
-            machine.reset()
+    except Exception as global_err:  # noqa: BLE001
+        print(f"Global Loop Error: {global_err}")
+        time.sleep_ms(2000)
+        machine.reset()
 
 
 if __name__ == "__main__":

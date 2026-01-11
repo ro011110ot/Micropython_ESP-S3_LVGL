@@ -3,9 +3,7 @@ import lvgl as lv
 
 
 class SensorScreen:
-    """
-    Displays sensor data in a table using data from DataManager.
-    """
+    """Displays sensor data in a table using data from DataManager."""
 
     def __init__(self, mqtt, data_mgr):
         self.mqtt = mqtt
@@ -32,9 +30,7 @@ class SensorScreen:
         self.next_row = 1
 
     def update_ui(self):
-        """
-        Iterates over stored sensor data and updates the table.
-        """
+        """Iterates over stored sensor data and updates the table."""
         all_data = self.data_mgr.get_all_data()
         sensors = all_data.get("sensors", {})
 

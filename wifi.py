@@ -1,33 +1,44 @@
 # wifi.py
 import time
+from secrets import WIFI_CREDENTIALS
+
 import network
 import ubinascii
-from secrets import WIFI_CREDENTIALS
 
 # --- Dynamic LED Detection ---
 led = None
 try:
     from status_led_rgb import StatusLedRGB
+
     led = StatusLedRGB()
     print("RGB LED detected.")
 except ImportError:
     try:
         from status_led import StatusLed
+
         led = StatusLed()
         print("Simple LED detected.")
     except ImportError:
+
         class DummyLed:
-            def wifi_connecting(self): pass
-            def mqtt_connecting(self): pass
-            def set_state(self, r, g, b): pass
-            def off(self): pass
+            def wifi_connecting(self):
+                pass
+
+            def mqtt_connecting(self):
+                pass
+
+            def set_state(self, r, g, b):
+                pass
+
+            def off(self):
+                pass
+
         led = DummyLed()
         print("No status LED file found. Proceeding without LED.")
 
+
 def connect(wdt=None):
-    """
-    Connects to the best available WiFi network from secrets.py.
-    """
+    """Connects to the best available Wi-Fi network from secrets.py."""
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     mac = ubinascii.hexlify(wlan.config("mac"), ":").decode()
@@ -58,7 +69,7 @@ def connect(wdt=None):
             print(f"IP:   {wlan.ifconfig()[0]}")
             print(f"MAC:  {mac.upper()}")
             print("-" * 30)
-            led.set_state(0, 0, 0) # Turn LED off
+            led.set_state(0, 0, 0)  # Turn LED off
             return True
 
     print("WiFi connection failed for all credentials.")
