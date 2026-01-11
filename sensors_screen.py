@@ -27,7 +27,7 @@ class SensorScreen:
         self.next_row = 1
 
     def update_ui(self):
-        """Iterates over stored sensor data and updates the table."""
+        """Iterate over stored sensor data and update the table."""
         all_data = self.data_mgr.get_all_data()
         sensors = all_data.get("sensors", {})
 
@@ -35,10 +35,8 @@ class SensorScreen:
             if storage_key not in self.row_map:
                 row = self.next_row
                 self.row_map[storage_key] = row
-
-                # Use the display name from DataManager
-                name = info["display_name"].replace("Sensor_", "").replace("_", " ")
-                self.table.set_cell_value(row, 0, name)
+                # Accessing the English key 'label' from DataManager
+                self.table.set_cell_value(row, 0, info["label"])
                 self.next_row += 1
 
             target_row = self.row_map[storage_key]

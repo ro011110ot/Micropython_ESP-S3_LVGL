@@ -5,12 +5,17 @@ import ujson
 class DataManager:
     """
     Central data storage.
-
     Handles incoming MQTT messages and prepares them for the UI screens.
     """
 
     def __init__(self):
+        # Structure:
+        # {'sensors': {'ID_Unit': {'label': '...', 'value': '...'}}, 'vps': {}}
         self.data_store = {"sensors": {}, "vps": {}}
+
+    def get_all_data(self):
+        """Return the entire data store."""
+        return self.data_store
 
     def process_message(self, topic, msg):
         """Main entry point for incoming MQTT messages."""
@@ -39,18 +44,19 @@ class DataManager:
         data = payload.get("data", payload)
         sensor_id = data.get("id", "Unknown")
 
-        # Normalize DS18B20 IDs
         if "DS18B20" in sensor_id:
             sensor_id = "_".join(sensor_id.split("_")[:2])
 
         value, unit = self._extract_value_and_unit(data)
 
         if value is not None:
-            # FIX: Create a unique key for each measurement type per sensor
-            # Result: "DHT11_Indoor_Temp" and "DHT11_Indoor_Humidity"
-            storage_key = f"{sensor_id}_{unit.replace('°', '').strip()}"
+            # Unique key for storage (e.g., DHT11_C)
+            clean_unit = unit.replace("°", "").strip()
+            storage_key = f"{sensor_id}_{clean_unit}"
+
+            # Save using 'label' and 'value' keys for UI
             self.data_store["sensors"][storage_key] = {
-                "display_name": f"{sensor_id} {unit}",
+                "label": f"{sensor_id} ({unit})",
                 "value": f"{value} {unit}",
             }
 
@@ -61,8 +67,7 @@ class DataManager:
             return data["Temp"], "°C"
         if "Humidity" in data:
             return data["Humidity"], "%"
-        return data.get("value"), data.get("unit", "")
 
-    def get_all_data(self):
-        """Returns the current state of the data store."""
-        return self.data_store
+        val = data.get("value")
+        u = data.get("unit", "")
+        return val, u
