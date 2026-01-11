@@ -2,8 +2,11 @@
 <project version="4">
   <component name="Black">
     <option name="executionMode" value="BINARY" />
-    <option name="pathToExecutable" value="/usr/bin/black" />
     <option name="sdkName" value="Python 3.13" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.13" project-jdk-type="Python SDK" />
+  <component name="RuffConfiguration">
+    <option name="enabled" value="true" />
+    <option name="executableDiscoveryMode" value="PATH" />
+  </component>
 </project>

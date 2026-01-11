@@ -4,8 +4,9 @@ import lcd_bus
 import lvgl as lv
 import machine
 import st7789
-import task_handler
 from micropython import const
+
+import task_handler
 
 _WIDTH, _HEIGHT = const(240), const(320)
 _FREQ = const(40_000_000)

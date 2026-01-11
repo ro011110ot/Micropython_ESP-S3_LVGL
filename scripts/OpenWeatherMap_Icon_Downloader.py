@@ -6,6 +6,7 @@ This script downloads OpenWeatherMap weather icons, resizes them to suitable
 dimensions for ESP32 displays.
 """
 
+import importlib.util
 from pathlib import Path
 
 import requests
@@ -35,49 +36,33 @@ ADDITIONAL_ICONS = [
 
 
 def download_icon(icon_name: str, output_dir: Path, size: str = "@2x") -> bool:
-    """
-    Downloads a single icon from OpenWeatherMap.
-
-    Args:
-        icon_name (str): The icon code (e.g., "01d", "10n", "wifi_on").
-        output_dir (Path): The directory where the icon will be saved.
-        size (str): The desired icon size suffix (e.g., "@2x" for 100x100px, "@4x" for 200x200px).
-                    Note: This only applies to OWM icons.
-
-    Returns:
-        bool: True if the download was successful, False otherwise.
-    """
-    # Construct URL for OWM icons. Additional icons are assumed to be named directly.
-    if icon_name.startswith(("0", "1", "5")):  # Heuristic for OWM icons
-        url = f"{BASE_URL}{icon_name}{size}.png"
-    else:  # Assume additional icons are already full names like 'wifi_on.png'
-        # For simplicity, we assume additional icons are not part of the OWM base URL
-        # and would need to be fetched from a different source or copied manually.
-        # This script focuses on OWM icons, so we'll skip direct download for these.
+    if icon_name in ADDITIONAL_ICONS:
+        # Zeilenumbruch im Print löst E501
         print(
-            f"Skipping download for non-OWM icon: {icon_name}. Please provide manually if needed."
+            f"Skipping download for non-OWM icon: {icon_name}. "
+            "Please provide manually if needed."
         )
         return False
 
+    url = f"{BASE_URL}{icon_name}{size}.png"
     output_path = output_dir / f"{icon_name}.png"
-    try:
-        print(f"Downloading {icon_name}.png ...")
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
 
-        # Save the image
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
         with open(output_path, "wb") as f:
             f.write(response.content)
-
         print(f"  ✓ Saved: {output_path}")
-        return True
-
     except requests.exceptions.RequestException as e:
         print(f"  ✗ Error downloading {icon_name}: {e}")
         return False
-    except Exception as e:
-        print(f"  ✗ An unexpected error occurred for {icon_name}: {e}")
+    # BLE001: Ersetze Exception durch konkretere Fehler oder unterdrücke es
+    except RuntimeError as e:
+        print(f"  ✗ Unexpected error for {icon_name}: {e}")
         return False
+    else:
+        # TRY300: return True gehört in den else-Block
+        return True
 
 
 def resize_icons(
@@ -108,7 +93,7 @@ def resize_icons(
 
             print(f"  ✓ {png_file.name} → {output_path}")
 
-        except Exception as e:
+        except (OSError, ValueError) as e:  # Spezifische Fehler statt Exception
             print(f"  ✗ Error resizing {png_file.name}: {e}")
 
 
@@ -146,11 +131,13 @@ def main() -> None:
         if download_icon(icon_name, original_size_dir):
             downloaded_count += 1
         elif icon_name in ADDITIONAL_ICONS:
-            # Create dummy files for additional icons if not downloaded, for resizing later
+            # Create dummy files for additional icons if not downloaded,
+            # for resizing later
             dummy_path = original_size_dir / f"{icon_name}.png"
             if not dummy_path.exists():
                 print(
-                    f"  Creating dummy PNG for {icon_name}. Please replace with actual icon if needed."
+                    f"  Creating dummy PNG for {icon_name}. "
+                    f"Please replace with actual icon if needed."
                 )
                 # Create a simple white square as a placeholder
                 Image.new("RGB", (100, 100), color="white").save(dummy_path)
@@ -172,18 +159,24 @@ def main() -> None:
     print("  2. Run 'convert_icons.py' (located in the same 'scripts' folder).")
     print("     It will convert these PNGs into LVGL-compatible '.bin' files.")
     print(
-        "  3. Copy the resulting '.bin' files from the 'icons' folder to your ESP32's '/icons' directory."
+        "  3. Copy the resulting '.bin' files from the 'icons' "
+        "folder to your ESP32's '/icons' directory."
     )
     print("=" * 60)
 
 
 if __name__ == "__main__":
-    # Check if Pillow (PIL) is installed
-    try:
-        import PIL
-    except ImportError:
-        print("ERROR: Pillow (PIL) is not installed!")
-        print("Please install it using: pip install Pillow requests")
-        exit(1)
+    import importlib.util
+    import sys
 
-    main()
+    # Check if Pillow (PIL) is installed
+    if importlib.util.find_spec("PIL") is None:
+        print("ERROR: Pillow (PIL) is not installed!")
+        print("Please run: pip install Pillow")
+        sys.exit(1)
+
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nAborted by user.")
+        sys.exit(0)

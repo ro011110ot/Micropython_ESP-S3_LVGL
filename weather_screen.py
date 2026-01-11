@@ -150,7 +150,8 @@ class WeatherScreen:
                     self.weather_icon.invalidate()  # Force re-draw
 
                 except OSError as e:
-                    # Specifically catch file system errors (e.g., file not found or corrupted)
+                    # Specifically catch file system errors
+                    # (e.g., file not found or corrupted)
                     print("Icon Loading Error:", e)
 
         except (OSError, KeyError, ValueError) as e:

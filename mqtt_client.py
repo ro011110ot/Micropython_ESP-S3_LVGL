@@ -123,6 +123,20 @@ class MQTT:
         else:
             return True
 
+    def ping(self):
+        """Send a keepalive ping to the broker."""
+        if not self.is_connected:
+            return False
+
+        try:
+            self.client.ping()
+        except OSError:
+            self.is_connected = False
+            return False
+        else:
+            # Only executed if NO OSError occurred
+            return True
+
     def check_msg(self):
         """
         Check for new messages.

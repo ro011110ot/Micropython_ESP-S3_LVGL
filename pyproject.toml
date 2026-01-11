@@ -1,0 +1,19 @@
+[project]
+name = "esp32-lvgl-project"
+version = "0.1.0"
+description = "ESP32-S3 Display System with LVGL and MQTT"
+dependencies = []
+
+[tool.ruff]
+# Entspricht deinem Wunsch nach sauberem Code
+line-length = 88
+target-version = "py311" # MicroPython ist nah an 3.11
+
+[tool.ruff.lint]
+# Aktiviere die Regeln, die wir besprochen haben
+select = ["E", "F", "C90", "TRY", "PERF", "BLE"]
+ignore = []
+
+[tool.pyright]
+# Hier kommt die Konfiguration hin, die du als JSON hattest
+reportMissingImports = "none"
