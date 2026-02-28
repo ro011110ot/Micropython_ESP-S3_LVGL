@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Black">
+    <option name="sdkName" value="Python 3.14 (ESP_S3_LVGL_2,8)" />
+  </component>
+  <component name="ProjectInspectionProfilesVisibleTreeState">
+    <entry key="Project Default">
+      <profile-state>
+        <expanded-state>
+          <State>
+            <id>Python</id>
+          </State>
+        </expanded-state>
+        <selected-state>
+          <State>
+            <id>PyInconsistentIndentationInspection</id>
+          </State>
+        </selected-state>
+      </profile-state>
+    </entry>
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.14 (ESP_S3_LVGL_2,8)" project-jdk-type="Python SDK" />
+  <component name="PyreflyConfiguration">
+    <option name="enabled" value="true" />
+  </component>
+  <component name="PyrightConfiguration">
+    <option name="enabled" value="true" />
+  </component>
+  <component name="RuffConfigService">
+    <option name="alwaysUseGlobalRuff" value="true" />
+    <option name="enableRuffLogging" value="true" />
+    <option name="globalRuffExecutablePath" value="/usr/bin/ruff" />
+    <option name="globalRuffLspExecutablePath" value="/usr/bin/ruff-lsp" />
+    <option name="runRuffOnSave" value="true" />
+    <option name="useRuffImportOptimizer" value="true" />
+    <option name="useRuffLsp" value="true" />
+  </component>
+  <component name="RuffConfiguration">
+    <option name="enabled" value="true" />
+  </component>
+</project>
