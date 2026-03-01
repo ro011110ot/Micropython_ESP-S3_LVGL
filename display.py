@@ -139,7 +139,7 @@ def get_touch():
     py = int((raw_x - _X_MIN) * 320 // (_X_MAX - _X_MIN))
     px = max(0, min(239, px))
     py = max(0, min(319, py))
-    return (px, py)
+    return px, py
 
 
 th = task_handler.TaskHandler()

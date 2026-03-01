@@ -45,7 +45,7 @@ VPS metrics, and local host statistics.
 1. **Firmware**: Ensure your ESP32-S3 is flashed with a MicroPython firmware
    that includes the `lvgl` and `lodepng` modules.
 2. **Configuration**: Create a `secrets.py` based on your network and API
-   credentials (WiFi, MQTT, OpenWeatherMap).
+   credentials (Wi-Fi, MQTT, OpenWeatherMap).
 3. **Assets**: Upload the `icons_png` folder to the root directory of the
    flash filesystem to enable weather icons.
 4. **Deployment**: Upload all `.py` files and run `main.py`.
