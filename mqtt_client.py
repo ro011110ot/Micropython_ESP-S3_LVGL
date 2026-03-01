@@ -43,7 +43,7 @@ class MQTT:
         try:
             t = topic.decode()
             m = msg.decode()
-            print(f"MQTT RECEIVE: [{t}] -> {m}")
+            # print(f"MQTT RECEIVE: [{t}] -> {m}")
 
             for cb in self.callbacks:
                 try:
