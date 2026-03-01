@@ -17,7 +17,11 @@ class HostMonitorScreen:
         lbl = lv.label(self.screen)
         lbl.set_text("Manjaro Host")
         lbl.align(lv.ALIGN.TOP_MID, 0, 10)
-
+        # CPU Temp Label (Oben rechts)
+        self.temp_label = lv.label(self.screen)
+        self.temp_label.set_style_text_color(lv.color_hex(0xFF4500), 0)  # Orange-Rot
+        self.temp_label.align(lv.ALIGN.TOP_RIGHT, -10, 10)
+        self.temp_label.set_text("-- °C")
         # CPU Section (4 Bars)
         self.cpu_bars = []
         for i in range(4):
@@ -46,7 +50,7 @@ class HostMonitorScreen:
         self.net_label = lv.label(self.screen)
         self.net_label.align(lv.ALIGN.BOTTOM_MID, 0, -60)
 
-    def update_values(self, cpu_list, ram_perc, net_speed):
+    def update_values(self, cpu_list, ram_perc, net_speed, temp):
         """Update UI with host metrics."""
         for i in range(min(len(cpu_list), 4)):
             self.cpu_bars[i].set_value(int(cpu_list[i]), True)
@@ -70,6 +74,14 @@ class HostMonitorScreen:
             self.net_label.set_text("Download: " + speed_text)
         except:
             self.net_label.set_text("Download: 0 KB/s")
+
+            # Temp Update
+        if temp > 0:
+            self.temp_label.set_text("{:.1f} °C".format(temp))
+            if temp > 75:
+                self.temp_label.set_style_text_color(lv.color_hex(0xFF0000), 0)  # Rot
+            else:
+                self.temp_label.set_style_text_color(lv.color_hex(0x00FF00), 0)  # Grün
 
     def get_screen(self):
         return self.screen

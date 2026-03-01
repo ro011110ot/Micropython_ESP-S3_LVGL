@@ -39,6 +39,7 @@ class DataManager:
         """Erwartet: {'cpu': [12, 5, 20, 10], 'ram': 45.5, 'net_down': 1200.5}"""
         self.data_store["host"] = {
             "cpu": payload.get("cpu", [0, 0, 0, 0]),
+            "temp": payload.get("temp", 0),
             "ram": payload.get("ram", 0),
             "net_down": payload.get("net_down", 0),
         }
