@@ -47,18 +47,29 @@ class HostMonitorScreen:
         self.net_label.align(lv.ALIGN.BOTTOM_MID, 0, -60)
 
     def update_values(self, cpu_list, ram_perc, net_speed):
+        """Update UI with host metrics."""
         for i in range(min(len(cpu_list), 4)):
             self.cpu_bars[i].set_value(int(cpu_list[i]), True)
 
-        used_gb = (ram_perc / 100) * 32
-        self.ram_label.set_text("RAM: {:.1f}GB / 32GB".format(used_gb))
-        self.ram_bar.set_value(int(ram_perc), True)
+        # RAM: Umrechnung basierend auf deinen 32GB (laut vorigem Code)
+        try:
+            val = float(ram_perc)
+            self.ram_bar.set_value(int(val), True)
+            used_gb = (val / 100) * 32
+            self.ram_label.set_text("RAM: {:.1f}GB / 32GB".format(used_gb))
+        except:
+            pass
 
-        if net_speed > 1024:
-            speed_text = "{:.2f} MB/s".format(net_speed / 1024)
-        else:
-            speed_text = "{:.1f} KB/s".format(net_speed)
-        self.net_label.set_text("Download: " + speed_text)
+        # Network: Formatierung
+        try:
+            speed = float(net_speed)
+            if speed > 1024:
+                speed_text = "{:.2f} MB/s".format(speed / 1024)
+            else:
+                speed_text = "{:.1f} KB/s".format(speed)
+            self.net_label.set_text("Download: " + speed_text)
+        except:
+            self.net_label.set_text("Download: 0 KB/s")
 
     def get_screen(self):
         return self.screen
