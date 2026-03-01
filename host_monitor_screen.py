@@ -16,7 +16,6 @@ class HostMonitorScreen:
         # Title
         lbl = lv.label(self.screen)
         lbl.set_text("Manjaro Host")
-        lbl.set_style_text_font(lv.font_montserrat_20, 0)
         lbl.align(lv.ALIGN.TOP_MID, 0, 10)
 
         # CPU Section (4 Bars)
@@ -26,8 +25,10 @@ class HostMonitorScreen:
             bar.set_size(180, 15)
             bar.set_range(0, 100)
             bar.align(lv.ALIGN.TOP_MID, 0, 50 + (i * 25))
+
+            # LVGL v9 Style Fix: Use bg_color with PART.INDICATOR
             bar.set_style_bg_color(lv.color_hex(COLOR_CARD_BG), lv.PART.MAIN)
-            bar.set_style_indic_color(lv.color_hex(COLOR_CPU), lv.PART.INDICATOR)
+            bar.set_style_bg_color(lv.color_hex(COLOR_CPU), lv.PART.INDICATOR)
             self.cpu_bars.append(bar)
 
             label = lv.label(self.screen)
@@ -41,25 +42,22 @@ class HostMonitorScreen:
         self.ram_bar = lv.bar(self.screen)
         self.ram_bar.set_size(200, 20)
         self.ram_bar.align(lv.ALIGN.TOP_MID, 0, 185)
-        self.ram_bar.set_style_indic_color(lv.color_hex(COLOR_RAM), lv.PART.INDICATOR)
+        # LVGL v9 Style Fix: Use bg_color with PART.INDICATOR
+        self.ram_bar.set_style_bg_color(lv.color_hex(COLOR_RAM), lv.PART.INDICATOR)
 
         # Network Section
         self.net_label = lv.label(self.screen)
-        self.net_label.set_style_text_font(lv.font_montserrat_18, 0)
         self.net_label.align(lv.ALIGN.BOTTOM_MID, 0, -60)
 
     def update_values(self, cpu_list, ram_perc, net_speed):
         """Update UI with host metrics."""
-        # CPU Update
         for i in range(min(len(cpu_list), 4)):
             self.cpu_bars[i].set_value(int(cpu_list[i]), lv.ANIM.ON)
 
-        # RAM Update (Calculated on 32GB)
         used_gb = (ram_perc / 100) * 32
         self.ram_label.set_text("RAM: {:.1f}GB / 32GB".format(used_gb))
         self.ram_bar.set_value(int(ram_perc), lv.ANIM.ON)
 
-        # Network Update
         if net_speed > 1024:
             speed_text = "{:.2f} MB/s".format(net_speed / 1024)
         else:

@@ -6,8 +6,6 @@ from secrets import OPENWEATHERMAP_API_KEY, OPENWEATHERMAP_CITY, OPENWEATHERMAP_
 import lvgl as lv
 import urequests
 
-_NAV_HEIGHT = 40
-
 COLOR_BG = 0x0A0E27
 COLOR_CARD_BG = 0x1A1F3A
 COLOR_PRIMARY = 0x00D9FF
@@ -37,13 +35,17 @@ class WeatherScreen:
 
         self.time_label = lv.label(self.header)
         self.time_label.set_style_text_color(lv.color_hex(COLOR_PRIMARY), 0)
-        self.time_label.set_style_text_font(lv.font_montserrat_16, 0)
         self.time_label.align(lv.ALIGN.CENTER, 0, 12)
 
         # Status Card: Icon + Description
         self.status_card = self._create_card(5, 65, 230, 70)
 
-        self.weather_icon = lv.image(self.status_card)
+        # LVGL v9 uses lv.image instead of lv.img
+        try:
+            self.weather_icon = lv.image(self.status_card)
+        except AttributeError:
+            self.weather_icon = lv.img(self.status_card)
+
         self.weather_icon.set_size(50, 50)
         self.weather_icon.align(lv.ALIGN.RIGHT_MID, -10, 0)
 
@@ -51,7 +53,6 @@ class WeatherScreen:
         self.desc_label.set_style_text_color(lv.color_hex(0xFFFFFF), 0)
         self.desc_label.align(lv.ALIGN.LEFT_MID, 10, 0)
         self.desc_label.set_width(155)
-        self.desc_label.set_long_mode(lv.label.LONG_MODE.WRAP)
 
         # Tiles
         self.temp_val = self._create_tile(5, 140, "Temperature", COLOR_ACCENT)
@@ -97,9 +98,9 @@ class WeatherScreen:
             return
         path = "/icons_png/{}.png".format(icon_code)
         try:
-            print("Load icon:", path)
             with open(path, "rb") as f:
                 self._icon_data = f.read()
+            # LVGL v9 image descriptor structure
             img_dsc = lv.image_dsc_t(
                 {"data_size": len(self._icon_data), "data": self._icon_data}
             )
@@ -135,7 +136,6 @@ class WeatherScreen:
             self._load_icon(data["weather"][0]["icon"])
         except (OSError, KeyError, ValueError) as e:
             print("Weather Update Failed:", e)
-            self.desc_label.set_text("No Data")
         gc.collect()
 
     def get_screen(self):
