@@ -93,13 +93,13 @@ def main():  # noqa: C901
                         v_data.get("UPTIME", 0),
                     )
                 elif active == "Host":
-                h_data = data_mgr.data_store.get("host", {})
-                if h_data:
-                    host_screen.update_values(
-                        h_data.get("cpu", [0, 0, 0, 0]),
-                        h_data.get("ram", 0),
-                        h_data.get("net_down", 0),
-                    )
+                    h_data = data_mgr.data_store.get("host", {})
+                    if h_data:
+                        host_screen.update_values(
+                            h_data.get("cpu", [0, 0, 0, 0]),
+                            h_data.get("ram", 0),
+                            h_data.get("net_down", 0),
+                        )
 
             time.sleep_ms(50)
             iteration += 1
