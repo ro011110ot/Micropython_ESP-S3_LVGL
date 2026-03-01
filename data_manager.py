@@ -11,25 +11,21 @@ class DataManager:
     def __init__(self):
         # Structure:
         # {'sensors': {'ID_Unit': {'label': '...', 'value': '...'}}, 'vps': {}}
-        self.data_store = {"sensors": {}, "vps": {}}
+        self.data_store = {"sensors": {}, "vps": {}, "host": {}}
 
     def get_all_data(self):
         """Return the entire data store."""
         return self.data_store
 
     def process_message(self, topic, msg):
-        """Main entry point for incoming MQTT messages."""
         try:
-            if not msg:
-                return
-
             payload = ujson.loads(str(msg).strip())
-
             if topic == "vps/monitor":
                 self._handle_vps_data(payload)
-            elif "Sensors" in topic or "sensors" in topic:
+            elif topic == "host/monitor":
+                self._handle_host_data(payload)
+            elif "sensors" in topic.lower():
                 self._handle_sensor_data(payload)
-
         except (ValueError, TypeError) as e:
             print(f"DataManager JSON Error: {e} | Content: {msg}")
 
@@ -38,6 +34,14 @@ class DataManager:
         for key in ["cpu", "ram", "disk", "uptime"]:
             if key in payload:
                 self.data_store["vps"][key.upper()] = payload[key]
+
+    def _handle_host_data(self, payload):
+        """Erwartet: {'cpu': [12, 5, 20, 10], 'ram': 45.5, 'net_down': 1200.5}"""
+        self.data_store["host"] = {
+            "CPU": payload.get("cpu", [0, 0, 0, 0]),
+            "RAM": payload.get("ram", 0),
+            "NET": payload.get("net_down", 0),
+        }
 
     def _handle_sensor_data(self, payload):
         """Process environmental data from ESP32."""

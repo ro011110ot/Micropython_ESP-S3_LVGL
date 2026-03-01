@@ -87,9 +87,14 @@ def resize_icons(
             # Resize to target size with high quality resampling
             img_resized = img.resize(target_size, Image.Resampling.LANCZOS)
 
-            # Save the resized image
+            # WICHTIG: RGB ohne Alpha erzwingen
+            img_resized = img_resized.convert("RGBA")
+
             output_path = output_dir / png_file.name
-            img_resized.save(output_path, optimize=True)
+
+            img_resized.save(
+                output_path, format="PNG", optimize=False, compress_level=0
+            )
 
             print(f"  ✓ {png_file.name} → {output_path}")
 

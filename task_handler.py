@@ -1,6 +1,6 @@
 # task_handler.py
 """
-LVGL Task Handler using ESP32-S3 hardware timer for consistent UI refresh.
+LVGL Task Handler using ESP32-S3 hardware timer.
 """
 
 import lvgl as lv
@@ -21,7 +21,7 @@ class TaskHandler:
         try:
             lv.tick_inc(self.refresh_rate_ms)
             lv.task_handler()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     def deinit(self):

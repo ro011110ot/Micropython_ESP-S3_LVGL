@@ -1,11 +1,7 @@
 # display.py
 """
-Display Manager für ESP32-S3 mit ILI9341 + XPT2046 Touch.
-Navigation über direktes Touch-Polling statt LVGL-Callbacks.
-
-Pin-Belegung:
-  Display: MOSI=18, SCK=17, CS=15, DC=16, RST=9, BL=21
-  Touch:   SCK=12, CS=4, MOSI=11, MISO=10
+Display Manager for ESP32-S3 with ILI9341 + XPT2046 Touch.
+Navigation via direct touch polling instead of LVGL callbacks.
 """
 
 import time
@@ -31,7 +27,7 @@ _DC = const(16)
 _RST = const(9)
 _BL = const(21)
 
-# ── Touch Pins (direktes SPI, kein xpt2046-Treiber) ──────────
+# ── Touch Pins (direct SPI polling) ──────────────────────────
 _T_SCK = const(12)
 _T_CS = const(4)
 _T_MOSI = const(11)
@@ -45,7 +41,7 @@ if not lv.is_initialized():
 _bl_pin = machine.Pin(_BL, machine.Pin.OUT)
 _bl_pin.value(1)
 
-# ── Manueller Reset ───────────────────────────────────────────
+# ── Manual Reset ─────────────────────────────────────────────
 print("Display RST...")
 _rst_pin = machine.Pin(_RST, machine.Pin.OUT)
 _rst_pin.value(1)
@@ -56,11 +52,11 @@ _rst_pin.value(1)
 time.sleep_ms(300)
 print("Display RST done")
 
-# ── Display SPI Bus ───────────────────────────────────────────
+# ── Display SPI Bus ──────────────────────────────────────────
 _display_spi = machine.SPI.Bus(host=1, mosi=_MOSI, sck=_SCK)
 _display_bus = lcd_bus.SPIBus(
     spi_bus=_display_spi,
-    freq=10_000_000,
+    freq=20_000_000,
     dc=_DC,
     cs=_CS,
 )
@@ -82,22 +78,22 @@ driver.set_rotation(lv.DISPLAY_ROTATION._0)
 driver.set_backlight(100)
 print("Display OK")
 
-# ── Filesystem für Icons ──────────────────────────────────────
+# ── Filesystem for Icons ─────────────────────────────────────
 try:
     fs_drv = lv.fs_drv_t()
     fs_driver.fs_register(fs_drv, "S")
     print("Filesystem 'S:' OK")
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print("FS Driver Error:", e)
 
-# ── PNG Decoder aktivieren ────────────────────────────────────
+# ── PNG Decoder ──────────────────────────────────────────────
 try:
     lv.lodepng_init()
     print("PNG Decoder OK")
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print("PNG Decoder Error:", e)
 
-# ── Touch: direktes SPI-Polling ───────────────────────────────
+# ── Touch: direct SPI polling ────────────────────────────────
 _t_sck = machine.Pin(_T_SCK, machine.Pin.OUT)
 _t_mosi = machine.Pin(_T_MOSI, machine.Pin.OUT)
 _t_miso = machine.Pin(_T_MISO, machine.Pin.IN)
@@ -112,7 +108,7 @@ _t_spi = machine.SoftSPI(
     miso=_t_miso,
 )
 
-# Kalibrierungswerte (aus vorheriger Kalibrierung)
+# Calibration values
 _X_MIN = 288
 _X_MAX = 1866
 _Y_MIN = 246
@@ -130,10 +126,7 @@ def _read_touch_raw(cmd):
 
 
 def get_touch():
-    """
-    Gibt (x, y) zurück wenn Touch erkannt, sonst None.
-    Koordinaten sind in Display-Pixeln (0-239, 0-319).
-    """
+    """Returns (x, y) if touched, else None."""
     raw_x = _read_touch_raw(0x90)
     raw_y = _read_touch_raw(0xD0)
 
@@ -142,7 +135,6 @@ def get_touch():
     if raw_y <= _Y_MIN or raw_y >= _Y_MAX:
         return None
 
-    # Achsen tauschen + invertieren (laut Kalibrierung)
     px = int((_Y_MAX - raw_y) * 240 // (_Y_MAX - _Y_MIN))
     py = int((raw_x - _X_MIN) * 320 // (_X_MAX - _X_MIN))
     px = max(0, min(239, px))
@@ -150,16 +142,12 @@ def get_touch():
     return (px, py)
 
 
-# ── Task Handler ──────────────────────────────────────────────
 th = task_handler.TaskHandler()
 print("Touch OK")
 
 
 class Display:
-    """
-    Verwaltet mehrere LVGL-Screens mit Touch-Navigation.
-    Navigation über direktes Touch-Polling in check_touch().
-    """
+    """Manages multiple screens with touch navigation."""
 
     _NAV_BG = 0x0A0E27
     _BTN_ACTIVE = 0x00D9FF
@@ -171,15 +159,15 @@ class Display:
         self.screens = {}
         self.screen_order = []
         self.active_name = None
-        self._nav_labels = {}  # screen_name -> {btn_name -> (btn_obj, lbl_obj)}
-        self._was_touched = False  # Entprellung
+        self._nav_labels = {}
+        self._was_touched = False
 
     def add_screen(self, name, instance):
         self.screens[name] = instance
         self.screen_order.append(name)
 
     def finalize_setup(self):
-        """Nav-Bar auf allen Screens vorab aufbauen."""
+        """Build navigation bar for all screens."""
         for name in self.screen_order:
             scr_obj = self.screens[name].get_screen()
             self._build_nav(scr_obj, name)
@@ -204,7 +192,7 @@ class Display:
         for i, sname in enumerate(self.screen_order):
             is_active = sname == owner_name
 
-            btn = lv.obj(nav)  # lv.obj statt lv.button - kein Event-Handling
+            btn = lv.obj(nav)
             btn.set_size(btn_width - 4, _NAV_HEIGHT - 4)
             btn.set_pos(i * btn_width + 2, 2)
             btn.set_style_radius(6, 0)
@@ -232,10 +220,7 @@ class Display:
         self.active_name = name
 
     def check_touch(self):
-        """
-        Im Main-Loop aufrufen!
-        Liest Touch direkt und wechselt Screen wenn Nav-Bar berührt.
-        """
+        """Poll touch and switch screen if nav bar is hit."""
         touch = get_touch()
 
         if touch is None:
@@ -243,15 +228,13 @@ class Display:
             return
 
         if self._was_touched:
-            return  # Entprellung: nur einmal pro Berührung reagieren
+            return
 
         x, y = touch
 
-        # Nur reagieren wenn Touch in der Nav-Bar (untere 40px)
         if y < (_HEIGHT - _NAV_HEIGHT):
             return
 
-        # Welcher Button wurde gedrückt?
         count = len(self.screen_order)
         btn_width = _WIDTH // count
         btn_idx = x // btn_width
