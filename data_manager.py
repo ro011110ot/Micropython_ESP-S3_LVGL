@@ -38,9 +38,9 @@ class DataManager:
     def _handle_host_data(self, payload):
         """Erwartet: {'cpu': [12, 5, 20, 10], 'ram': 45.5, 'net_down': 1200.5}"""
         self.data_store["host"] = {
-            "CPU": payload.get("cpu", [0, 0, 0, 0]),
-            "RAM": payload.get("ram", 0),
-            "NET": payload.get("net_down", 0),
+            "cpu": payload.get("cpu", [0, 0, 0, 0]),
+            "ram": payload.get("ram", 0),
+            "net_down": payload.get("net_down", 0),
         }
 
     def _handle_sensor_data(self, payload):

@@ -92,7 +92,7 @@ def main():  # noqa: C901
                         v_data.get("DISK", 0),
                         v_data.get("UPTIME", 0),
                     )
-            elif active == "Host":
+                elif active == "Host":
                 h_data = data_mgr.data_store.get("host", {})
                 if h_data:
                     host_screen.update_values(

@@ -47,8 +47,6 @@ class HostMonitorScreen:
         self.net_label.align(lv.ALIGN.BOTTOM_MID, 0, -60)
 
     def update_values(self, cpu_list, ram_perc, net_speed):
-        """Update UI with host metrics."""
-        # Fix: Nutze True statt lv.ANIM_ON für Kompatibilität
         for i in range(min(len(cpu_list), 4)):
             self.cpu_bars[i].set_value(int(cpu_list[i]), True)
 
