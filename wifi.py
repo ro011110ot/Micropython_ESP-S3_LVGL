@@ -1,4 +1,8 @@
 # wifi.py
+"""
+Wi-Fi connection handler with automatic LED status indication.
+"""
+
 import time
 from secrets import WIFI_CREDENTIALS
 

@@ -19,12 +19,18 @@ class DataManager:
 
     def process_message(self, topic, msg):
         try:
+            # Ensure bytes are decoded properly if necessary
+            if isinstance(msg, bytes):
+                msg = msg.decode("utf-8")
+
             payload = ujson.loads(str(msg).strip())
+
             if topic == "vps/monitor":
                 self._handle_vps_data(payload)
             elif topic == "host/monitor":
                 self._handle_host_data(payload)
-            elif topic == "Sensors":
+            # FIX: Allow sub-topics like 'Sensors/DHT11'
+            elif topic == "Sensors" or topic.startswith("Sensors/"):
                 self._handle_sensor_data(payload)
         except (ValueError, TypeError) as e:
             print(f"DataManager JSON Error: {e} | Content: {msg}")
@@ -36,16 +42,42 @@ class DataManager:
                 self.data_store["vps"][key.upper()] = payload[key]
 
     def _handle_host_data(self, payload):
-        """Expected: {'cpu': [12, 5, 20, 10], 'ram': 45.5, 'net_down': 1200.5}"""
+        """
+        Process host system metrics.
+
+        Expected payload:
+        {
+            "cpu": [34.3, 38.3, 34, 38.1],
+            "cpu_temp": 91,
+            "ram": 34.6,
+            "ssd_temp": 30.85,
+            "net_down": 4.59375,
+            "net_up": 2.3671875
+        }
+        """
         self.data_store["host"] = {
             "cpu": payload.get("cpu", [0, 0, 0, 0]),
-            "temp": payload.get("temp", 0),
+            "cpu_temp": payload.get("cpu_temp", 0),
             "ram": payload.get("ram", 0),
+            "ssd_temp": payload.get("ssd_temp", 0),
             "net_down": payload.get("net_down", 0),
         }
 
     def _handle_sensor_data(self, payload):
         """Process environmental data from ESP32."""
+        # FIX: Directly parse the new incoming composite payload format
+        if "temperature" in payload and "humidity" in payload:
+            self.data_store["sensors"]["DHT11_C"] = {
+                "label": "DHT11 Temp",
+                "value": f"{payload['temperature']} °C",
+            }
+            self.data_store["sensors"]["DHT11_Percent"] = {
+                "label": "DHT11 Hum",
+                "value": f"{payload['humidity']} %",
+            }
+            return
+
+        # Fallback to legacy parsing if format matches older specifications
         data = payload.get("data", payload)
         sensor_id = data.get("id", "Unknown")
 
@@ -55,11 +87,9 @@ class DataManager:
         value, unit = self._extract_value_and_unit(data)
 
         if value is not None:
-            # Unique key for storage (e.g., DHT11_C)
             clean_unit = unit.replace("°", "").strip()
             storage_key = f"{sensor_id}_{clean_unit}"
 
-            # Save using 'label' and 'value' keys for UI
             self.data_store["sensors"][storage_key] = {
                 "label": f"{sensor_id} ({unit})",
                 "value": f"{value} {unit}",

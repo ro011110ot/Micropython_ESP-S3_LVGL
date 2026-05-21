@@ -1,4 +1,7 @@
 # timer.py
+"""
+LVGL timer wrapper for periodic callbacks.
+"""
 import lvgl as lv
 
 

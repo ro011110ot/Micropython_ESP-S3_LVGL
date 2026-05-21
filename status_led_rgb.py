@@ -6,6 +6,7 @@ from neopixel import NeoPixel
 
 
 class StatusLedRGB:
+    """RGB NeoPixel status LED indicator."""
 
     def __init__(self, pin_number=48, num_pixels=1):
         self.pin = Pin(pin_number, Pin.OUT)

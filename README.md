@@ -71,11 +71,32 @@ Replace the placeholder values with your actual credentials.
 
 ## File Structure
 
-- `main.py`: Entry point, system initialization, and main loop.
-- `display.py`: Display driver setup and touch navigation logic.
-- `mqtt_client.py`: Robust MQTT wrapper for data synchronization.
-- `task_handler.py`: Hardware timer-based LVGL refresh management.
-- `*_screen.py`: Individual UI layout definitions for different data views.
+| File                     | Description                                                                                           |
+|:-------------------------|:------------------------------------------------------------------------------------------------------|
+| `main.py`                | Entry point. Initializes Wi-Fi, NTP, MQTT, display, and runs the main loop.                           |
+| `display.py`             | ILI9341 display driver, XPT2046 touch polling, and LVGL screen management with bottom navigation bar. |
+| `data_manager.py`        | Central data store. Parses incoming MQTT messages and distributes data to UI screens.                 |
+| `mqtt_client.py`         | MQTT wrapper with SSL, LWT, auto-reconnect, and multi-callback support.                               |
+| `task_handler.py`        | Hardware timer-based LVGL tick and task handler (5 ms refresh).                                       |
+| `wifi.py`                | Wi-Fi connection handler with automatic RGB LED status indication.                                    |
+| `ntp.py`                 | NTP time synchronization with CET/CEST daylight-saving time adjustment.                               |
+| `timer.py`               | LVGL timer wrapper for periodic callbacks.                                                            |
+| `status_led_rgb.py`      | RGB NeoPixel status LED (Wi-Fi connecting, MQTT connecting states).                                   |
+| `host_monitor_screen.py` | Host (Manjaro) metrics: per-core CPU, CPU/SSD temperature, RAM, network speed.                        |
+| `vps_monitor_screen.py`  | VPS metrics: CPU, RAM, disk usage, and uptime.                                                        |
+| `sensors_screen.py`      | Sensor data table (DHT11, DS18B20) displayed via DataManager.                                         |
+| `weather_screen.py`      | OpenWeatherMap weather display with PNG icon rendering via lodepng.                                   |
+| `touch_cal.py`           | Touch calibration utility — tap screen corners to derive X/Y raw values.                              |
+| `boot.py`                | MicroPython boot script (executed on every startup).                                                  |
+
+## MQTT Topics & Payloads
+
+| Topic                | Direction  | Payload                                                                                                     |
+|:---------------------|:-----------|:------------------------------------------------------------------------------------------------------------|
+| `host/monitor`       | Receive    | `{"cpu": [34.3, 38.3, 34, 38.1], "cpu_temp": 91, "ram": 34.6, "ssd_temp": 30.85, "net_down": 4.59375}`      |
+| `vps/monitor`        | Receive    | `{"cpu": 12.5, "ram": 45.3, "disk": 67.1, "uptime": 123456}`                                                |
+| `Sensors/#`          | Receive    | Composite payload with `temperature` and `humidity`, or legacy per-sensor format with `id`, `Temp`/`value`. |
+| `status/{client_id}` | Send (LWT) | `"online"` / `"offline"` (with retain)                                                                      |
 
 ## Future Improvements
 

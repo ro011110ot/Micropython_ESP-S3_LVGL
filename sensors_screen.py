@@ -1,4 +1,8 @@
 # sensors_screen.py
+"""
+Display sensor data (DHT11, DS18B20) on an LVGL table.
+"""
+
 import lvgl as lv
 
 # Reserve space for Nav-Bar

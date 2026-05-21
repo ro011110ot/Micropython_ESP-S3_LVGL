@@ -1,6 +1,6 @@
 # mqtt_client.py
 """
-Handle MQTT communication for ESP32.
+MQTT client wrapper with SSL, LWT, auto-reconnect, and multi-callback support.
 """
 
 import gc

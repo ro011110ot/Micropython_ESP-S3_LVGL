@@ -1,4 +1,9 @@
 # host_monitor_screen.py
+"""
+Display local host (Manjaro) metrics on an LVGL screen.
+Shows per-core CPU bars, CPU/SSD temperature, RAM usage, and network speed.
+"""
+
 import lvgl as lv
 
 COLOR_BG = 0x0A0E27
@@ -11,6 +16,8 @@ COLOR_TEMP_HOT = 0xFF4500  # Red
 
 
 class HostMonitorScreen:
+    """LVGL screen for local Manjaro host monitoring."""
+
     def __init__(self):
         self.screen = lv.obj()
         self.screen.set_style_bg_color(lv.color_hex(COLOR_BG), 0)
@@ -36,22 +43,17 @@ class HostMonitorScreen:
             label.set_style_text_font(lv.font_montserrat_12, 0)
             label.align_to(bar, lv.ALIGN.OUT_LEFT_MID, -8, 0)
 
-        # --- NEW: Temperature Section (before RAM) ---
-        self.temp_title = lv.label(self.screen)
-        self.temp_title.set_text("CPU Temperatur")
-        self.temp_title.set_style_text_font(lv.font_montserrat_12, 0)
-        self.temp_title.align(lv.ALIGN.TOP_LEFT, 30, 135)
-
-        self.temp_val_label = lv.label(self.screen)
-        self.temp_val_label.align(lv.ALIGN.TOP_RIGHT, -30, 135)
-        self.temp_val_label.set_text("--°C")
+        # --- Temperature Section (before RAM) ---
+        self.temp_info_label = lv.label(self.screen)
+        self.temp_info_label.set_style_text_font(lv.font_montserrat_12, 0)
+        self.temp_info_label.align(lv.ALIGN.TOP_LEFT, 30, 135)
+        self.temp_info_label.set_text("CPU: --\xb0C  |  SSD: --\xb0C")
 
         self.temp_bar = lv.bar(self.screen)
         self.temp_bar.set_size(180, 12)
         self.temp_bar.set_range(0, 100)
         self.temp_bar.align(lv.ALIGN.TOP_MID, 0, 155)
         self.temp_bar.set_style_bg_color(lv.color_hex(COLOR_CARD_BG), lv.PART.MAIN)
-        # Default color Green
         self.temp_bar.set_style_bg_color(
             lv.color_hex(COLOR_TEMP_GOOD), lv.PART.INDICATOR
         )
@@ -71,16 +73,19 @@ class HostMonitorScreen:
         self.net_label = lv.label(self.screen)
         self.net_label.align(lv.ALIGN.BOTTOM_MID, 0, -55)
 
-    def update_values(self, cpu_list, ram_perc, net_speed, temp):
+    def update_values(self, cpu_list, ram_perc, net_speed, cpu_temp, ssd_temp):
         """Update UI with host metrics."""
         # CPU Update
         for i in range(min(len(cpu_list), 4)):
             self.cpu_bars[i].set_value(int(cpu_list[i]), True)
 
-        # Temp Update with color change
-        t_val = int(temp)
+        # CPU Temp Update with color change
+        t_val = int(cpu_temp)
         self.temp_bar.set_value(t_val, True)
-        self.temp_val_label.set_text(f"{t_val}°C")
+
+        # Update combined temp info label
+        ssd_str = "{:.1f}\xb0C".format(ssd_temp) if ssd_temp else "--\xb0C"
+        self.temp_info_label.set_text("CPU: {}\xb0C  |  SSD: {}".format(t_val, ssd_str))
 
         if t_val < 55:
             color = COLOR_TEMP_GOOD

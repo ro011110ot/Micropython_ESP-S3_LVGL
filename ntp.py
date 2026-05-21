@@ -1,4 +1,7 @@
 # ntp.py
+"""
+NTP time synchronization with CET/CEST daylight-saving adjustment.
+"""
 import time
 
 import ntptime

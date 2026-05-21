@@ -1,4 +1,8 @@
 # main.py
+"""
+Entry point. Initializes Wi-Fi, NTP, MQTT, display, and runs the main loop.
+"""
+
 import gc
 import time
 
@@ -99,7 +103,8 @@ def main():  # noqa: C901
                         h_data.get("cpu", [0, 0, 0, 0]),
                         h_data.get("ram", 0),
                         h_data.get("net_down", 0),
-                        h_data.get("temp", 0),
+                        h_data.get("cpu_temp", 0),
+                        h_data.get("ssd_temp", 0),
                     )
 
             time.sleep_ms(50)

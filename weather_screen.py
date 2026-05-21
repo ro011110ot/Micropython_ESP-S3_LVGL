@@ -1,4 +1,8 @@
 # weather_screen.py
+"""
+OpenWeatherMap weather display with PNG icon rendering.
+"""
+
 import gc
 import time
 from secrets import OPENWEATHERMAP_API_KEY, OPENWEATHERMAP_CITY, OPENWEATHERMAP_COUNTRY
@@ -14,6 +18,8 @@ COLOR_ACCENT = 0xFFB800
 
 
 class WeatherScreen:
+    """LVGL screen showing current weather, time, and date."""
+
     def __init__(self, mqtt):
         self.mqtt = mqtt
         self.screen = lv.obj()
