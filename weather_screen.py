@@ -55,10 +55,10 @@ class WeatherScreen:
         self.desc_label.set_width(155)
 
         # Tiles
-        self.temp_val = self._create_tile(5, 140, "Temperature", COLOR_ACCENT)
-        self.hum_val = self._create_tile(125, 140, "Humidity", COLOR_PRIMARY)
+        self.temp_val = self._create_tile(5, 140, "Temperatur", COLOR_ACCENT)
+        self.hum_val = self._create_tile(125, 140, "Feuchtigkeit", COLOR_PRIMARY)
         self.wind_val = self._create_tile(5, 215, "Wind", COLOR_ACCENT)
-        self.pres_val = self._create_tile(125, 215, "Pressure", 0x7B2FFF)
+        self.pres_val = self._create_tile(125, 215, "Luftdruck", 0x7B2FFF)
 
     @staticmethod
     def _replace_umlauts(text):

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
-    <option name="sdkName" value="Python 3.14 (ESP_S3_LVGL_2,8)" />
+    <option name="executionMode" value="BINARY" />
+    <option name="pathToExecutable" value="/usr/bin/black" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -22,9 +23,8 @@
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.14 (ESP_S3_LVGL_2,8)" project-jdk-type="Python SDK" />
   <component name="PyreflyConfiguration">
     <option name="enabled" value="true" />
-  </component>
-  <component name="PyrightConfiguration">
-    <option name="enabled" value="true" />
+    <option name="executableDiscoveryMode" value="PATH" />
+    <option name="pathToExecutable" value="/usr/bin/pyrefly" />
   </component>
   <component name="RuffConfigService">
     <option name="alwaysUseGlobalRuff" value="true" />
@@ -34,8 +34,5 @@
     <option name="runRuffOnSave" value="true" />
     <option name="useRuffImportOptimizer" value="true" />
     <option name="useRuffLsp" value="true" />
-  </component>
-  <component name="RuffConfiguration">
-    <option name="enabled" value="true" />
   </component>
 </project>

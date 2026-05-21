@@ -5,9 +5,9 @@ COLOR_BG = 0x0A0E27
 COLOR_CARD_BG = 0x1A1F3A
 COLOR_CPU = 0x00D9FF
 COLOR_RAM = 0xFFB800
-COLOR_TEMP_GOOD = 0x2ECC71  # Grün
-COLOR_TEMP_WARM = 0xFFB800  # Gelb/Orange
-COLOR_TEMP_HOT = 0xFF4500  # Rot
+COLOR_TEMP_GOOD = 0x2ECC71  # Green
+COLOR_TEMP_WARM = 0xFFB800  # Yellow/Orange
+COLOR_TEMP_HOT = 0xFF4500  # Red
 
 
 class HostMonitorScreen:
@@ -36,9 +36,9 @@ class HostMonitorScreen:
             label.set_style_text_font(lv.font_montserrat_12, 0)
             label.align_to(bar, lv.ALIGN.OUT_LEFT_MID, -8, 0)
 
-        # --- NEU: Temperature Section (vor dem RAM) ---
+        # --- NEW: Temperature Section (before RAM) ---
         self.temp_title = lv.label(self.screen)
-        self.temp_title.set_text("CPU Temp")
+        self.temp_title.set_text("CPU Temperatur")
         self.temp_title.set_style_text_font(lv.font_montserrat_12, 0)
         self.temp_title.align(lv.ALIGN.TOP_LEFT, 30, 135)
 
@@ -51,12 +51,12 @@ class HostMonitorScreen:
         self.temp_bar.set_range(0, 100)
         self.temp_bar.align(lv.ALIGN.TOP_MID, 0, 155)
         self.temp_bar.set_style_bg_color(lv.color_hex(COLOR_CARD_BG), lv.PART.MAIN)
-        # Standardfarbe Grün
+        # Default color Green
         self.temp_bar.set_style_bg_color(
             lv.color_hex(COLOR_TEMP_GOOD), lv.PART.INDICATOR
         )
 
-        # RAM Section (etwas nach unten verschoben)
+        # RAM Section
         self.ram_label = lv.label(self.screen)
         self.ram_label.set_style_text_font(lv.font_montserrat_12, 0)
         self.ram_label.align(lv.ALIGN.TOP_LEFT, 30, 175)
@@ -77,7 +77,7 @@ class HostMonitorScreen:
         for i in range(min(len(cpu_list), 4)):
             self.cpu_bars[i].set_value(int(cpu_list[i]), True)
 
-        # Temp Update mit Farbwechsel
+        # Temp Update with color change
         t_val = int(temp)
         self.temp_bar.set_value(t_val, True)
         self.temp_val_label.set_text(f"{t_val}°C")
@@ -96,7 +96,7 @@ class HostMonitorScreen:
             self.ram_bar.set_value(int(r_val), True)
             used_gb = (r_val / 100) * 32
             self.ram_label.set_text("RAM: {:.1f}GB / 32GB".format(used_gb))
-        except:
+        except Exception:
             pass
 
         # Network Update
@@ -107,7 +107,7 @@ class HostMonitorScreen:
             else:
                 speed_text = "{:.1f} KB/s".format(speed)
             self.net_label.set_text("Download: " + speed_text)
-        except:
+        except Exception:
             pass
 
     def get_screen(self):

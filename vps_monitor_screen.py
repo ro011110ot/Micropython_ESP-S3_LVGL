@@ -1,6 +1,6 @@
 """
 Display VPS metrics on an LVGL screen.
-Nav-Bar (40px) am unteren Rand freigehalten.
+Nav-Bar (40px) at the bottom is reserved.
 """
 
 import lvgl as lv
@@ -17,16 +17,16 @@ class VPSMonitorScreen:
         self.screen.set_style_bg_color(lv.color_hex(0x0A0E27), 0)
         self.screen.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
 
-        # Titel
+        # Title
         label = lv.label(self.screen)
         label.set_text("VPS STATUS")
         label.set_style_text_color(lv.color_hex(0x00D9FF), 0)
         label.align(lv.ALIGN.TOP_MID, 0, 8)
 
-        # Metric Widgets - innerhalb Content-Bereich
-        self.cpu_bar = self._create_metric("CPU Usage", 45)
-        self.ram_bar = self._create_metric("RAM Usage", 105)
-        self.disk_bar = self._create_metric("Disk Usage", 165)
+        # Metric Widgets - within content area
+        self.cpu_bar = self._create_metric("CPU Auslastung", 45)
+        self.ram_bar = self._create_metric("RAM Auslastung", 105)
+        self.disk_bar = self._create_metric("Speicherbelegung", 165)
 
         # Uptime
         uptime_title = lv.label(self.screen)
@@ -35,7 +35,7 @@ class VPSMonitorScreen:
         uptime_title.align(lv.ALIGN.TOP_LEFT, 15, 225)
 
         self.uptime_label = lv.label(self.screen)
-        self.uptime_label.set_text("Awaiting data...")
+        self.uptime_label.set_text("Warten auf Daten...")
         self.uptime_label.set_style_text_color(lv.color_hex(0xFFFFFF), 0)
         self.uptime_label.align(lv.ALIGN.TOP_LEFT, 15, 248)
         self.uptime_label.set_width(210)

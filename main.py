@@ -48,7 +48,7 @@ def main():  # noqa: C901
     host_screen = HostMonitorScreen()
 
     disp_man.add_screen("Weather", weather)
-    disp_man.add_screen("Sensors", sensors)
+    disp_man.add_screen("Temp", sensors)
     disp_man.add_screen("VPS", vps)
     disp_man.add_screen("Host", host_screen)
     disp_man.finalize_setup()
@@ -81,7 +81,7 @@ def main():  # noqa: C901
                 weather.update_time()
                 if iteration % 3000 == 0:
                     weather.update_weather()
-            elif active == "Sensors":
+            elif active == "Temp":
                 sensors.update_ui()
             elif active == "VPS":
                 v_data = data_mgr.data_store.get("vps", {})

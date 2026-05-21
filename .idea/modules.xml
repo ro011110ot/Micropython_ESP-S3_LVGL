@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/ESP_S3_LVGL_2,8.iml" filepath="$PROJECT_DIR$/.idea/ESP_S3_LVGL_2,8.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/esp32-lvgl-project.iml" filepath="$PROJECT_DIR$/.idea/esp32-lvgl-project.iml" />
     </modules>
   </component>
 </project>

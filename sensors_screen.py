@@ -1,9 +1,9 @@
 # sensors_screen.py
 import lvgl as lv
 
-# Nav-Bar Höhe freilassen
+# Reserve space for Nav-Bar
 _NAV_HEIGHT = 40
-_CONTENT_HEIGHT = 320 - _NAV_HEIGHT  # 280px für Content
+_CONTENT_HEIGHT = 320 - _NAV_HEIGHT  # 280px for content
 
 
 class SensorScreen:
@@ -16,13 +16,13 @@ class SensorScreen:
         self.screen.set_style_bg_color(lv.color_hex(0x121212), 0)
         self.screen.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
 
-        # Titel
+        # Title
         title = lv.label(self.screen)
         title.set_text("SENSOREN")
         title.set_style_text_color(lv.color_hex(0x00D9FF), 0)
         title.align(lv.ALIGN.TOP_MID, 0, 8)
 
-        # Tabelle - nur bis zur Nav-Bar
+        # Table - only up to the Nav-Bar
         self.table = lv.table(self.screen)
         self.table.set_column_count(2)
         self.table.set_column_width(0, 150)

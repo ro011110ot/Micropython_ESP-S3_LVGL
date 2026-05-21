@@ -24,7 +24,7 @@ class DataManager:
                 self._handle_vps_data(payload)
             elif topic == "host/monitor":
                 self._handle_host_data(payload)
-            elif "sensors" in topic.lower():
+            elif topic == "Sensors":
                 self._handle_sensor_data(payload)
         except (ValueError, TypeError) as e:
             print(f"DataManager JSON Error: {e} | Content: {msg}")
@@ -36,7 +36,7 @@ class DataManager:
                 self.data_store["vps"][key.upper()] = payload[key]
 
     def _handle_host_data(self, payload):
-        """Erwartet: {'cpu': [12, 5, 20, 10], 'ram': 45.5, 'net_down': 1200.5}"""
+        """Expected: {'cpu': [12, 5, 20, 10], 'ram': 45.5, 'net_down': 1200.5}"""
         self.data_store["host"] = {
             "cpu": payload.get("cpu", [0, 0, 0, 0]),
             "temp": payload.get("temp", 0),

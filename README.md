@@ -40,15 +40,34 @@ VPS metrics, and local host statistics.
 | Touch     | 12  | SCK       |
 | Touch     | 4   | CS        |
 
-## Setup
+## Configuration (`secrets.py`)
 
-1. **Firmware**: Ensure your ESP32-S3 is flashed with a MicroPython firmware
-   that includes the `lvgl` and `lodepng` modules.
-2. **Configuration**: Create a `secrets.py` based on your network and API
-   credentials (Wi-Fi, MQTT, OpenWeatherMap).
-3. **Assets**: Upload the `icons_png` folder to the root directory of the
-   flash filesystem to enable weather icons.
-4. **Deployment**: Upload all `.py` files and run `main.py`.
+Sensitive credentials and API keys are stored in a `secrets.py` file, which should NOT be committed to version control.
+
+Create this file in the root directory with the following structure:
+
+```python
+# Wi-Fi Credentials
+WIFI_CREDENTIALS = [
+    {"ssid": "YOUR_WIFI_SSID", "password": "YOUR_WIFI_PASSWORD"},
+    # Add more networks if needed
+]
+
+# MQTT Broker Details
+MQTT_BROKER = "your.mqtt.broker.com"
+MQTT_PORT = 8883  # Or your MQTT port
+MQTT_USER = "your_mqtt_username"
+MQTT_PASS = "your_mqtt_password"
+MQTT_CLIENT_ID = "esp32-s3-dashboard-1"
+MQTT_USE_SSL = True  # Set to False if not using SSL
+
+# OpenWeatherMap API Key
+OPENWEATHERMAP_API_KEY = "YOUR_OPENWEATHERMAP_API_KEY"
+OPENWEATHERMAP_CITY = "YourCity"
+OPENWEATHERMAP_COUNTRY = "YourCountryCode" # e.g., "de" for Germany
+```
+
+Replace the placeholder values with your actual credentials.
 
 ## File Structure
 
@@ -57,3 +76,16 @@ VPS metrics, and local host statistics.
 - `mqtt_client.py`: Robust MQTT wrapper for data synchronization.
 - `task_handler.py`: Hardware timer-based LVGL refresh management.
 - `*_screen.py`: Individual UI layout definitions for different data views.
+
+## Future Improvements
+
+- **Error Handling**: Implement more granular error handling and reporting for network
+  and sensor data.
+- **Configuration Management**: Allow dynamic configuration changes via MQTT or a
+  web interface instead of relying solely on `secrets.py`.
+- **UI Enhancements**: Add animations, more sophisticated transitions, and a wider
+  range of widgets for a richer user experience.
+- **Data Persistence**: Implement a mechanism to store sensor data locally (e.g., on
+  SPIFFS or an external SD card) for historical analysis.
+- **Code Modularity**: Further break down complex modules into smaller, more manageable
+  units.
