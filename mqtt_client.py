@@ -64,9 +64,9 @@ class MQTT:
         gc.collect()
         try:
             lwt_topic = f"status/{self.device_id}"
-            self.client.set_last_will(lwt_topic, "offline", retain=True)
-            self.client.connect()
-            self.client.publish(lwt_topic, "online", retain=True)
+            self.client.set_last_will(lwt_topic, "offline", retain=True)  # ty:ignore[unresolved-attribute]
+            self.client.connect()  # ty:ignore[unresolved-attribute]
+            self.client.publish(lwt_topic, "online", retain=True)  # ty:ignore[unresolved-attribute]
             self.is_connected = True
             print("MQTT connected successfully.")
         except OSError as e:
@@ -87,7 +87,7 @@ class MQTT:
     def subscribe(self, topic):
         if self.is_connected:
             try:
-                self.client.subscribe(topic)
+                self.client.subscribe(topic)  # ty:ignore[unresolved-attribute]
                 print(f"Subscribed: {topic}")
             except OSError:
                 self.is_connected = False
@@ -101,7 +101,7 @@ class MQTT:
             return False
         try:
             payload = json.dumps(data)
-            self.client.publish(topic, payload, retain=retain)
+            self.client.publish(topic, payload, retain=retain)  # ty:ignore[unresolved-attribute]
         except (OSError, ValueError):
             self.is_connected = False
             return False
@@ -112,7 +112,7 @@ class MQTT:
         if not self.is_connected:
             return False
         try:
-            self.client.ping()
+            self.client.ping()  # ty:ignore[unresolved-attribute]
         except OSError:
             self.is_connected = False
             return False
@@ -124,7 +124,7 @@ class MQTT:
             return
 
         try:
-            self.client.check_msg()
+            self.client.check_msg()  # ty:ignore[unresolved-attribute]
         except OSError as e:
             print(f"MQTT connection lost: {e}")
             self.is_connected = False

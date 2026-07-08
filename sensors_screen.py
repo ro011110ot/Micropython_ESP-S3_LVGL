@@ -1,13 +1,15 @@
-# sensors_screen.py
 """
-Display sensor data (DHT11, DS18B20) on an LVGL table.
+Display sensor data (DHT11, DS18B20) in an LVGL table.
+
+Reads sensor values from DataManager and populates a scrollable table.
+Reserves 40px at the bottom for the navigation bar.
 """
 
+# noinspection PyUnresolvedReferences
 import lvgl as lv
 
-# Reserve space for Nav-Bar
 _NAV_HEIGHT = 40
-_CONTENT_HEIGHT = 320 - _NAV_HEIGHT  # 280px for content
+_CONTENT_HEIGHT = 320 - _NAV_HEIGHT
 
 
 class SensorScreen:
@@ -20,13 +22,11 @@ class SensorScreen:
         self.screen.set_style_bg_color(lv.color_hex(0x121212), 0)
         self.screen.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
 
-        # Title
         title = lv.label(self.screen)
-        title.set_text("SENSOREN")
+        title.set_text("SENSORS")
         title.set_style_text_color(lv.color_hex(0x00D9FF), 0)
         title.align(lv.ALIGN.TOP_MID, 0, 8)
 
-        # Table - only up to the Nav-Bar
         self.table = lv.table(self.screen)
         self.table.set_column_count(2)
         self.table.set_column_width(0, 150)
@@ -35,7 +35,7 @@ class SensorScreen:
         self.table.set_size(240, _CONTENT_HEIGHT - 40)
 
         self.table.set_cell_value(0, 0, "Sensor")
-        self.table.set_cell_value(0, 1, "Wert")
+        self.table.set_cell_value(0, 1, "Value")
 
         self.table.set_style_bg_color(lv.color_hex(0x1E1E1E), 0)
         self.table.set_style_text_color(lv.color_hex(0xFFFFFF), 0)

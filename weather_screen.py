@@ -7,6 +7,7 @@ import gc
 import time
 from secrets import OPENWEATHERMAP_API_KEY, OPENWEATHERMAP_CITY, OPENWEATHERMAP_COUNTRY
 
+# noinspection PyUnresolvedReferences
 import lvgl as lv
 import urequests
 
@@ -60,11 +61,10 @@ class WeatherScreen:
         self.desc_label.align(lv.ALIGN.LEFT_MID, 10, 0)
         self.desc_label.set_width(155)
 
-        # Tiles
-        self.temp_val = self._create_tile(5, 140, "Temperatur", COLOR_ACCENT)
-        self.hum_val = self._create_tile(125, 140, "Feuchtigkeit", COLOR_PRIMARY)
+        self.temp_val = self._create_tile(5, 140, "Temperature", COLOR_ACCENT)
+        self.hum_val = self._create_tile(125, 140, "Humidity", COLOR_PRIMARY)
         self.wind_val = self._create_tile(5, 215, "Wind", COLOR_ACCENT)
-        self.pres_val = self._create_tile(125, 215, "Luftdruck", 0x7B2FFF)
+        self.pres_val = self._create_tile(125, 215, "Pressure", 0x7B2FFF)
 
     @staticmethod
     def _replace_umlauts(text):
@@ -76,7 +76,7 @@ class WeatherScreen:
             res = res.replace(k, v)
         return res
 
-    def _create_card(self, x, y, w, h):
+    def _create_card(self, x: int, y: int, w: int, h: int) -> lv.obj:
         card = lv.obj(self.screen)
         card.set_size(w, h)
         card.set_pos(x, y)
@@ -86,7 +86,8 @@ class WeatherScreen:
         card.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
         return card
 
-    def _create_tile(self, x, y, title, color):
+    # Define the return type explicitly to stop Pyright from guessing 'int'
+    def _create_tile(self, x: int, y: int, title: str, color: int) -> lv.o:  # noqa: F821
         card = self._create_card(x, y, 110, 70)
         t_lbl = lv.label(card)
         t_lbl.set_text(self._replace_umlauts(title))

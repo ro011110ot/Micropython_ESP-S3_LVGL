@@ -6,10 +6,17 @@ Navigation via direct touch polling instead of LVGL callbacks.
 
 import time
 
-import fs_driver  # ty:ignore[unresolved-import]
-import ili9341  # ty:ignore[unresolved-import]
-import lcd_bus  # ty:ignore[unresolved-import]
-import lvgl as lv  # ty:ignore[unresolved-import]
+# noinspection PyUnresolvedReferences
+import fs_driver
+
+# noinspection PyUnresolvedReferences
+import ili9341
+
+# noinspection PyUnresolvedReferences
+import lcd_bus
+
+# noinspection PyUnresolvedReferences
+import lvgl as lv
 import machine
 from micropython import const
 
@@ -19,7 +26,7 @@ _WIDTH = const(240)
 _HEIGHT = const(320)
 _NAV_HEIGHT = const(40)
 
-# ── Display Pins ──────────────────────────────────────────────
+# Display pins
 _MOSI = const(18)
 _SCK = const(17)
 _CS = const(15)
@@ -27,21 +34,21 @@ _DC = const(16)
 _RST = const(9)
 _BL = const(21)
 
-# ── Touch Pins (direct SPI polling) ──────────────────────────
+# Touch pins (direct SPI polling)
 _T_SCK = const(12)
 _T_CS = const(4)
 _T_MOSI = const(11)
 _T_MISO = const(10)
 
-# ── LVGL init ─────────────────────────────────────────────────
+# LVGL initialization
 if not lv.is_initialized():
     lv.init()
 
-# ── Backlight ─────────────────────────────────────────────────
+# Backlight
 _bl_pin = machine.Pin(_BL, machine.Pin.OUT)
 _bl_pin.value(1)
 
-# ── Manual Reset ─────────────────────────────────────────────
+# Manual reset sequence
 print("Display RST...")
 _rst_pin = machine.Pin(_RST, machine.Pin.OUT)
 _rst_pin.value(1)
@@ -52,7 +59,7 @@ _rst_pin.value(1)
 time.sleep_ms(300)
 print("Display RST done")
 
-# ── Display SPI Bus ──────────────────────────────────────────
+# Display SPI bus
 _display_spi = machine.SPI.Bus(host=1, mosi=_MOSI, sck=_SCK)
 _display_bus = lcd_bus.SPIBus(
     spi_bus=_display_spi,
@@ -74,12 +81,12 @@ driver = ili9341.ILI9341(
 driver.set_power(True)
 driver.init(2)
 driver.set_color_inversion(True)
-# noinspection PyProtectedMemberInspection
+# noinspection PyProtectedMember
 driver.set_rotation(lv.DISPLAY_ROTATION._0)
 driver.set_backlight(100)
 print("Display OK")
 
-# ── Filesystem for Icons ─────────────────────────────────────
+# Filesystem registration for icon storage
 try:
     fs_drv = lv.fs_drv_t()
     fs_driver.fs_register(fs_drv, "S")
@@ -87,14 +94,14 @@ try:
 except Exception as e:  # noqa: BLE001
     print("FS Driver Error:", e)
 
-# ── PNG Decoder ──────────────────────────────────────────────
+# PNG decoder (lodepng)
 try:
     lv.lodepng_init()
     print("PNG Decoder OK")
 except Exception as e:  # noqa: BLE001
     print("PNG Decoder Error:", e)
 
-# ── Touch: direct SPI polling ────────────────────────────────
+# Touch: direct SPI polling
 _t_sck = machine.Pin(_T_SCK, machine.Pin.OUT)
 _t_mosi = machine.Pin(_T_MOSI, machine.Pin.OUT)
 _t_miso = machine.Pin(_T_MISO, machine.Pin.IN)

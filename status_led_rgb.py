@@ -1,4 +1,7 @@
-# status_led_rgb.py
+"""
+RGB NeoPixel status LED with visual indicators for Wi-Fi and MQTT states.
+"""
+
 import time
 
 from machine import Pin
@@ -20,10 +23,9 @@ class StatusLedRGB:
     def off(self):
         self.set_state(0, 0, 0)
 
-    # Extended: uses color for set_state
     def blink(self, color=(0, 255, 0), duration=0.5, num_blinks=3):
         for _ in range(num_blinks):
-            self.set_state(*color)  # Entpackt das Tupel (R, G, B)
+            self.set_state(*color)
             time.sleep(duration)
             self.off()
             time.sleep(duration)

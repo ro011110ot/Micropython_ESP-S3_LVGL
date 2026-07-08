@@ -2,6 +2,7 @@
 """
 NTP time synchronization with CET/CEST daylight-saving adjustment.
 """
+
 import time
 
 import ntptime
@@ -16,23 +17,25 @@ def cettime():
     """
     year = time.localtime()[0]
 
-    # DST calculation (last Sunday of March and October)
+    # DST: last Sunday of March (start) and October (end)
+    # mktime expects: (year, month, mday, hour, minute, second, weekday, yearday, isdst)
     dst_start_utc = time.mktime(
-        (year, 3, (31 - (int(5 * year / 4 + 4)) % 7), 1, 0, 0, 0, 0),
+        (year, 3, (31 - (int(5 * year / 4 + 4)) % 7), 1, 0, 0, 0, 0, 0)
     )
     dst_end_utc = time.mktime(
-        (year, 10, (31 - (int(5 * year / 4 + 1)) % 7), 1, 0, 0, 0, 0),
+        (year, 10, (31 - (int(5 * year / 4 + 1)) % 7), 1, 0, 0, 0, 0, 0)
     )
 
     now_utc = time.time()
     # CEST: UTC+2, CET: UTC+1
-    if dst_start_utc <= now_utc < dst_end_utc:  # noqa: SIM108
+    if dst_start_utc <= now_utc < dst_end_utc:
         offset_seconds = 7200  # Summer
     else:
         offset_seconds = 3600  # Winter
 
     cet_tuple = time.localtime(now_utc + offset_seconds)
-    year, month, day, hour, minute, second, weekday_0_6, _ = cet_tuple
+    # Added an extra '_' to unpack the 9th element (isdst)
+    year, month, day, hour, minute, second, weekday_0_6, _, _ = cet_tuple
 
     # RTC expects weekday 1-7 (Monday=1)
     return year, month, day, weekday_0_6 + 1, hour, minute, second, 0

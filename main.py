@@ -35,9 +35,10 @@ def setup_mqtt(mqtt, wdt=None):
 def _handle_mqtt(mqtt, wdt):
     if not mqtt.is_connected:
         setup_mqtt(mqtt, wdt)
-        time.sleep_ms(1000)
+        time.sleep_ms(1000)  # ty:ignore[unresolved-attribute]
         return
     mqtt.check_msg()
+
 
 def _update_active_screen(
     disp_man, data_mgr, weather, sensors, vps, host_screen, iteration
@@ -68,6 +69,7 @@ def _update_active_screen(
                 h_data.get("cpu_temp", 0),
                 h_data.get("ssd_temp", 0),
             )
+
 
 def main():
     wdt = machine.WDT(timeout=30000)
@@ -114,14 +116,14 @@ def main():
                 disp_man, data_mgr, weather, sensors, vps, host_screen, iteration
             )
 
-            time.sleep_ms(50)
+            time.sleep_ms(50)  # ty:ignore[unresolved-attribute]
             iteration += 1
             if iteration % 200 == 0:
                 gc.collect()
 
         except Exception as e:  # noqa: BLE001
             print(f"Global Loop Error: {e}")
-            time.sleep_ms(2000)
+            time.sleep_ms(2000)  # ty:ignore[unresolved-attribute]
             machine.reset()
 
 

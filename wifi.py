@@ -9,7 +9,7 @@ from secrets import WIFI_CREDENTIALS
 import network
 import ubinascii
 
-# --- Dynamic LED Detection ---
+# Dynamic LED detection — import RGB or simple LED, fall back to dummy
 led = None
 try:
     from status_led_rgb import StatusLedRGB

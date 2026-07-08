@@ -1,12 +1,15 @@
 """
 Display VPS metrics on an LVGL screen.
-Nav-Bar (40px) at the bottom is reserved.
+
+Shows CPU, RAM, disk usage, and system uptime from a remote VPS.
+Reserves 40px at the bottom for the navigation bar.
 """
 
+# noinspection PyUnresolvedReferences
 import lvgl as lv
 
 _NAV_HEIGHT = 40
-_CONTENT_HEIGHT = 320 - _NAV_HEIGHT  # 280px
+_CONTENT_HEIGHT = 320 - _NAV_HEIGHT
 
 
 class VPSMonitorScreen:
@@ -17,25 +20,22 @@ class VPSMonitorScreen:
         self.screen.set_style_bg_color(lv.color_hex(0x0A0E27), 0)
         self.screen.set_scrollbar_mode(lv.SCROLLBAR_MODE.OFF)
 
-        # Title
         label = lv.label(self.screen)
         label.set_text("VPS STATUS")
         label.set_style_text_color(lv.color_hex(0x00D9FF), 0)
         label.align(lv.ALIGN.TOP_MID, 0, 8)
 
-        # Metric Widgets - within content area
-        self.cpu_bar = self._create_metric("CPU Auslastung", 45)
-        self.ram_bar = self._create_metric("RAM Auslastung", 105)
-        self.disk_bar = self._create_metric("Speicherbelegung", 165)
+        self.cpu_bar = self._create_metric("CPU Usage", 45)
+        self.ram_bar = self._create_metric("RAM Usage", 105)
+        self.disk_bar = self._create_metric("Disk Usage", 165)
 
-        # Uptime
         uptime_title = lv.label(self.screen)
         uptime_title.set_text("System Uptime:")
         uptime_title.set_style_text_color(lv.color_hex(0xA0A0C0), 0)
         uptime_title.align(lv.ALIGN.TOP_LEFT, 15, 225)
 
         self.uptime_label = lv.label(self.screen)
-        self.uptime_label.set_text("Warten auf Daten...")
+        self.uptime_label.set_text("Awaiting data...")
         self.uptime_label.set_style_text_color(lv.color_hex(0xFFFFFF), 0)
         self.uptime_label.align(lv.ALIGN.TOP_LEFT, 15, 248)
         self.uptime_label.set_width(210)
@@ -54,7 +54,7 @@ class VPSMonitorScreen:
                 return f"{days:d}d {hours:d}h {minutes:d}m"
             return f"{hours:d}h {minutes:d}m"
 
-    def _create_metric(self, name, y_pos):
+    def _create_metric(self, name: str, y_pos: int) -> lv.obj:
         lbl = lv.label(self.screen)
         lbl.set_text(name)
         lbl.set_style_text_color(lv.color_hex(0xAAAAAA), 0)

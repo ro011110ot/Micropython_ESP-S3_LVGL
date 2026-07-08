@@ -2,6 +2,8 @@
 """
 LVGL timer wrapper for periodic callbacks.
 """
+
+# noinspection PyUnresolvedReferences
 import lvgl as lv
 
 

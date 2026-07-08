@@ -1,7 +1,10 @@
 """
-Touch Kalibrierung - Tippe auf die angezeigten Ecken
-und notiere die X/Y Rohwerte
+Touch calibration utility for the XPT2046 resistive touch controller.
+
+Tap the four screen corners and record the raw X/Y values.
+Use the output to update calibration constants in display.py.
 """
+
 import time
 
 import machine
@@ -18,6 +21,7 @@ spi = machine.SoftSPI(
 
 
 def read_xy():
+    """Read raw X/Y coordinates from the touch controller."""
     t_cs.value(0)
     time.sleep_us(100)
     spi.write(bytearray([0x90]))
@@ -35,52 +39,51 @@ def read_xy():
     return x, y
 
 
-def warte_auf_touch(label):
-    print(f"\n>>> Bitte {label} berühren und gedrückt halten...")
-    # Warte bis Touch erkannt
+def wait_for_touch(label):
+    """Prompt user to touch a corner, then return averaged raw X/Y values."""
+    print(f"\n>>> Please touch and hold: {label}")
     while True:
         x, y = read_xy()
         if x != 2047 and 50 < x < 4000:
-            # Mehrfach messen für Stabilität
-            werte = []
+            samples = []
             for _ in range(5):
                 x, y = read_xy()
                 if x != 2047:
-                    werte.append((x, y))
+                    samples.append((x, y))
                 time.sleep_ms(50)
-            if len(werte) >= 3:
-                ax = sum(v[0] for v in werte) // len(werte)
-                ay = sum(v[1] for v in werte) // len(werte)
-                print(f"    -> Rohwert: X={ax}, Y={ay}")
-                time.sleep_ms(500)  # Loslassen abwarten
+            if len(samples) >= 3:
+                ax = sum(v[0] for v in samples) // len(samples)
+                ay = sum(v[1] for v in samples) // len(samples)
+                print(f"    -> Raw: X={ax}, Y={ay}")
+                time.sleep_ms(500)
                 return ax, ay
         time.sleep_ms(100)
 
 
 print("=" * 40)
-print("TOUCH KALIBRIERUNG")
+print("TOUCH CALIBRATION")
 print("=" * 40)
 
-tl_x, tl_y = warte_auf_touch("OBEN LINKS")
-tr_x, tr_y = warte_auf_touch("OBEN RECHTS")
-bl_x, bl_y = warte_auf_touch("UNTEN LINKS")
-br_x, br_y = warte_auf_touch("UNTEN RECHTS")
+tl_x, tl_y = wait_for_touch("TOP LEFT")
+tr_x, tr_y = wait_for_touch("TOP RIGHT")
+bl_x, bl_y = wait_for_touch("BOTTOM LEFT")
+br_x, br_y = wait_for_touch("BOTTOM RIGHT")
 
 print("\n" + "=" * 40)
-print("ERGEBNISSE:")
-print(f"  Oben Links  : X={tl_x}, Y={tl_y}")
-print(f"  Oben Rechts : X={tr_x}, Y={tr_y}")
-print(f"  Unten Links : X={bl_x}, Y={bl_y}")
-print(f"  Unten Rechts: X={br_x}, Y={br_y}")
+print("RESULTS:")
+print(f"  Top Left     : X={tl_x}, Y={tl_y}")
+print(f"  Top Right    : X={tr_x}, Y={tr_y}")
+print(f"  Bottom Left  : X={bl_x}, Y={bl_y}")
+print(f"  Bottom Right : X={br_x}, Y={br_y}")
 
 x_min = min(tl_x, bl_x)
 x_max = max(tr_x, br_x)
 y_min = min(tl_y, tr_y)
 y_max = max(bl_y, br_y)
 
-print("\nKalibrierungswerte für main.py:")
+print("\nCalibration values for display.py:")
 print(f"  X_MIN={x_min}, X_MAX={x_max}")
 print(f"  Y_MIN={y_min}, Y_MAX={y_max}")
-print("\nMapping Formel:")
+print("\nMapping formula:")
 print(f"  x = (raw_x - {x_min}) * 240 // ({x_max} - {x_min})")
 print(f"  y = (raw_y - {y_min}) * 320 // ({y_max} - {y_min})")

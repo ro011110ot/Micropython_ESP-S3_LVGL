@@ -1,4 +1,10 @@
-# data_manager.py
+"""
+Central data store for incoming MQTT messages.
+
+Parses payloads from host/monitor, vps/monitor, and Sensors/# topics
+and routes them to the appropriate UI screens.
+"""
+
 import ujson
 
 

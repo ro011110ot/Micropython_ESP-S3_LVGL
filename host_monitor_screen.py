@@ -4,6 +4,7 @@ Display local host (Manjaro) metrics on an LVGL screen.
 Shows per-core CPU bars, CPU/SSD temperature, RAM usage, and network speed.
 """
 
+# noinspection PyUnresolvedReferences
 import lvgl as lv  # ty:ignore[unresolved-import]
 
 COLOR_BG = 0x0A0E27

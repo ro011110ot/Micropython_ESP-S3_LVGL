@@ -3,6 +3,7 @@
 LVGL Task Handler using ESP32-S3 hardware timer.
 """
 
+# noinspection PyUnresolvedReferences
 import lvgl as lv
 from machine import Timer
 
