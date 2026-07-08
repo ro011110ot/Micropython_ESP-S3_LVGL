@@ -32,7 +32,44 @@ def setup_mqtt(mqtt, wdt=None):
     return False
 
 
-def main():  # noqa: C901
+def _handle_mqtt(mqtt, wdt):
+    if not mqtt.is_connected:
+        setup_mqtt(mqtt, wdt)
+        time.sleep_ms(1000)
+        return
+    mqtt.check_msg()
+
+def _update_active_screen(
+    disp_man, data_mgr, weather, sensors, vps, host_screen, iteration
+):
+    active = disp_man.active_name
+    if active == "Weather":
+        weather.update_time()
+        if iteration % 3000 == 0:
+            weather.update_weather()
+    elif active == "Temp":
+        sensors.update_ui()
+    elif active == "VPS":
+        v_data = data_mgr.data_store.get("vps", {})
+        if v_data:
+            vps.update_values(
+                v_data.get("CPU", 0),
+                v_data.get("RAM", 0),
+                v_data.get("DISK", 0),
+                v_data.get("UPTIME", 0),
+            )
+    elif active == "Host":
+        h_data = data_mgr.data_store.get("host", {})
+        if h_data:
+            host_screen.update_values(
+                h_data.get("cpu", [0, 0, 0, 0]),
+                h_data.get("ram", 0),
+                h_data.get("net_down", 0),
+                h_data.get("cpu_temp", 0),
+                h_data.get("ssd_temp", 0),
+            )
+
+def main():
     wdt = machine.WDT(timeout=30000)
     wifi.connect(wdt)
     ntp.sync()
@@ -45,7 +82,6 @@ def main():  # noqa: C901
 
     disp_man = Display()
 
-    # Init Screens
     weather = WeatherScreen(mqtt)
     sensors = SensorScreen(mqtt, data_mgr)
     vps = VPSMonitorScreen()
@@ -66,46 +102,17 @@ def main():  # noqa: C901
             wdt.feed()
             disp_man.check_touch()
 
-            # MQTT Handling
             try:
-                if not mqtt.is_connected:
-                    setup_mqtt(mqtt, wdt)
-                    time.sleep_ms(1000)
-                else:
-                    mqtt.check_msg()
-                    if iteration % 100 == 0:
-                        mqtt.ping()
+                _handle_mqtt(mqtt, wdt)
+                if iteration % 100 == 0:
+                    mqtt.ping()
             except (OSError, AttributeError) as e:
                 print(f"MQTT error: {e}")
                 mqtt.is_connected = False
 
-            # UI Update Logic
-            active = disp_man.active_name
-            if active == "Weather":
-                weather.update_time()
-                if iteration % 3000 == 0:
-                    weather.update_weather()
-            elif active == "Temp":
-                sensors.update_ui()
-            elif active == "VPS":
-                v_data = data_mgr.data_store.get("vps", {})
-                if v_data:
-                    vps.update_values(
-                        v_data.get("CPU", 0),
-                        v_data.get("RAM", 0),
-                        v_data.get("DISK", 0),
-                        v_data.get("UPTIME", 0),
-                    )
-            elif active == "Host":
-                h_data = data_mgr.data_store.get("host", {})
-                if h_data:
-                    host_screen.update_values(
-                        h_data.get("cpu", [0, 0, 0, 0]),
-                        h_data.get("ram", 0),
-                        h_data.get("net_down", 0),
-                        h_data.get("cpu_temp", 0),
-                        h_data.get("ssd_temp", 0),
-                    )
+            _update_active_screen(
+                disp_man, data_mgr, weather, sensors, vps, host_screen, iteration
+            )
 
             time.sleep_ms(50)
             iteration += 1

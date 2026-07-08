@@ -6,10 +6,10 @@ Navigation via direct touch polling instead of LVGL callbacks.
 
 import time
 
-import fs_driver
-import ili9341
-import lcd_bus
-import lvgl as lv
+import fs_driver  # ty:ignore[unresolved-import]
+import ili9341  # ty:ignore[unresolved-import]
+import lcd_bus  # ty:ignore[unresolved-import]
+import lvgl as lv  # ty:ignore[unresolved-import]
 import machine
 from micropython import const
 
@@ -74,6 +74,7 @@ driver = ili9341.ILI9341(
 driver.set_power(True)
 driver.init(2)
 driver.set_color_inversion(True)
+# noinspection PyProtectedMemberInspection
 driver.set_rotation(lv.DISPLAY_ROTATION._0)
 driver.set_backlight(100)
 print("Display OK")

@@ -21,7 +21,7 @@ class TaskHandler:
         try:
             lv.tick_inc(self.refresh_rate_ms)
             lv.task_handler()
-        except Exception:  # noqa: BLE001
+        except (OSError, AttributeError):
             pass
 
     def deinit(self):

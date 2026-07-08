@@ -123,7 +123,7 @@ class WeatherScreen:
 
     def update_weather(self):
         url = (
-            "http://api.openweathermap.org/data/2.5/weather"
+            "https://api.openweathermap.org/data/2.5/weather"
             "?q={},{}&appid={}&units=metric&lang=de".format(
                 OPENWEATHERMAP_CITY, OPENWEATHERMAP_COUNTRY, OPENWEATHERMAP_API_KEY
             )

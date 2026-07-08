@@ -4,7 +4,7 @@ Display local host (Manjaro) metrics on an LVGL screen.
 Shows per-core CPU bars, CPU/SSD temperature, RAM usage, and network speed.
 """
 
-import lvgl as lv
+import lvgl as lv  # ty:ignore[unresolved-import]
 
 COLOR_BG = 0x0A0E27
 COLOR_CARD_BG = 0x1A1F3A
@@ -101,7 +101,7 @@ class HostMonitorScreen:
             self.ram_bar.set_value(int(r_val), True)
             used_gb = (r_val / 100) * 32
             self.ram_label.set_text("RAM: {:.1f}GB / 32GB".format(used_gb))
-        except Exception:
+        except (ValueError, TypeError):
             pass
 
         # Network Update
@@ -112,7 +112,7 @@ class HostMonitorScreen:
             else:
                 speed_text = "{:.1f} KB/s".format(speed)
             self.net_label.set_text("Download: " + speed_text)
-        except Exception:
+        except (ValueError, TypeError):
             pass
 
     def get_screen(self):

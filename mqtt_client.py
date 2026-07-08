@@ -81,7 +81,7 @@ class MQTT:
         if self.client:
             try:
                 self.client.disconnect()
-            except Exception:  # noqa: BLE001
+            except OSError:
                 pass
 
     def subscribe(self, topic):
