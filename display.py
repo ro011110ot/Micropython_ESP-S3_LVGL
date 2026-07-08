@@ -94,7 +94,7 @@ try:
 except Exception as e:  # noqa: BLE001
     print("FS Driver Error:", e)
 
-# PNG decoder (lodepng)
+# PNG decoder (load png)
 try:
     lv.lodepng_init()
     print("PNG Decoder OK")

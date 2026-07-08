@@ -15,9 +15,17 @@ select = ["E", "F", "C90", "TRY", "PERF", "BLE"]
 ignore = []
 
 [tool.pyright]
-# Hier kommt die Konfiguration hin, die du als JSON hattest
-reportMissingImports = "none"
+# Basis-Einstellungen für MicroPython
+include = ["."]
+exclude = ["**/__pycache__"]
 
+# Unterdrücke die nervigen Fehler
+reportMissingImports = false
+reportMissingModuleSource = false
+reportUnresolvedImport = false
+reportAttributeAccessIssue = false
+reportOperatorIssue = false # Hilft gegen die // und - Fehler bei bytearray
+reportOptionalMemberAccess = false
 [dependency-groups]
 dev = [
     "micropython-esp32-s3-stubs>=1.20.0.post1",

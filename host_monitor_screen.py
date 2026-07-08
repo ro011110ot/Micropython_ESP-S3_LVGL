@@ -5,7 +5,7 @@ Shows per-core CPU bars, CPU/SSD temperature, RAM usage, and network speed.
 """
 
 # noinspection PyUnresolvedReferences
-import lvgl as lv  # ty:ignore[unresolved-import]
+import lvgl as lv
 
 COLOR_BG = 0x0A0E27
 COLOR_CARD_BG = 0x1A1F3A
